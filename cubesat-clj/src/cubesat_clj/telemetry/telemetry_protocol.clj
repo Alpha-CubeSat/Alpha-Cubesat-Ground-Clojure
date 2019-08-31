@@ -7,7 +7,13 @@
             [buddy.sign.jwt :as jwt]
             [clj-time.core :as time]
             [buddy.core.keys :as keys]
-            [cheshire.core :as json]))
+            [cheshire.core :as json]
+            [cubesat-clj.util.binary.byte-buffer :as buffer]
+            [cubesat-clj.util.binary.binary-reader :as reader]
+            [cubesat-clj.util.binary.hex-string :as hex]))
+
+
+;;---------------------------- ROCKBLOCK DATA --------------------------------------------------------------------------
 
 (s/defschema RockblockReport
   "A report submitted by the rockblock API. Contains main fields with satellite
@@ -58,13 +64,68 @@
   (try (let [jwt (:JWT rockblock-report)
              unsigned-data (jwt/unsign jwt rockblock-web-pk {:alg :rs256})]
          (clojure.walk/keywordize-keys unsigned-data))      ;Have to convert the decoded json to edn, even though original, unencoded, request was in edn
-       (catch Exception e (do (.printStackTrace e) nil))))
+       (catch Exception e
+         (do (str "Caught exception unsigning rockblock data: " (.printStackTrace e))
+             nil))))
 
-;(defn -main []
-;  (do
-;    (let [data (json/decode "{\n  \"averageCog\": 0,\n  \"iridium_latitude\": 42.0588,\n  \"device_type\": \"TIGERSHARK\",\n  \"lon\": 19.09065,\n  \"sog\": 0.0,\n  \"source\": \"GPS\",\n  \"battery\": 82,\n  \"cep\": 5,\n  \"momsn\": 337,\n  \"id\": \"rLzVjdQqPgkanllZloYlnpRyKbJZONAG\",\n  \"power\": false,\n  \"transmit_time\": \"2019-01-31T14:00:13Z\",\n  \"lat\": 42.09897,\n  \"txAt\": \"2019-01-31T14:00:13Z\",\n  \"pdop\": 1.25,\n  \"temp\": 8.0,\n  \"alt\": 6,\n  \"transport\": \"IRIDIUM\",\n  \"trigger\": \"BURST\",\n  \"iridium_longitude\": 19.0618,\n  \"averageSog\": 0.0,\n  \"at\": \"2019-01-31T14:00:00Z\",\n  \"serial\": 21341,\n  \"cog\": 0,\n  \"JWT\": \"eyJhbGciOiJSUzI1NiJ9.eyJpc3MiOiJSb2NrIDciLCJpYXQiOjE1NDg5NTIzMzIsImFsdCI6IjYiLCJhdCI6IjIwMTktMDEtMzFUMTQ6MDA6MDBaIiwiYXZlcmFnZUNvZyI6IjAiLCJhdmVyYWdlU29nIjoiMC4wIiwiYmF0dGVyeSI6IjgyIiwiY2VwIjoiNSIsImNvZyI6IjAiLCJkZXZpY2VfdHlwZSI6IlRJR0VSU0hBUksiLCJpZCI6InJMelZqZFFxUGdrYW5sbFpsb1lsbnBSeUtiSlpPTkFHIiwiaXJpZGl1bV9sYXRpdHVkZSI6IjQyLjA1ODgiLCJpcmlkaXVtX2xvbmdpdHVkZSI6IjE5LjA2MTgiLCJsYXQiOiI0Mi4wOTg5NyIsImxvbiI6IjE5LjA5MDY1IiwibW9tc24iOiIzMzciLCJwZG9wIjoiMS4yNSIsInBvd2VyIjoiZmFsc2UiLCJzZXJpYWwiOiIyMTM0MSIsInNvZyI6IjAuMCIsInNvdXJjZSI6IkdQUyIsInRlbXAiOiI4LjAiLCJ0cmFuc21pdF90aW1lIjoiMjAxOS0wMS0zMVQxNDowMDoxM1oiLCJ0cmFuc3BvcnQiOiJJUklESVVNIiwidHJpZ2dlciI6IkJVUlNUIiwidHhBdCI6IjIwMTktMDEtMzFUMTQ6MDA6MTNaIn0.fxLTO4KCy-94rxVhVWrOWdXNgdWR9FLqBlBjtO2uJQlo_njbIOuiU_M8CAv4f1lon6IbbTPen4mRiSIR26S8gn3TUvPdIzzq769bVQBGNiywmwDXZbCJC3-gFi07vcvpyeXPnaEegS1M-Acd-bsC9ORzGeGTSRz5Mp9uajCJ_BSUM7ljMiZajZ6WPoVTgPwTrJ9BdUuz78qipdEQRUW1qdoubkl21SyMYRonB39CMXkA4MTrbITM1g_3viGBVglijIyVh2fumLErYP5SvwfVxNXDSuC5LFHqIszojc3gf5xwuR-fCt4CbzL_I7lOCuct3_kRiYGbUSDpU5Ytp6e1wA\"\n}")
-;          jwt (data "JWT")
-;          unsigned (jwt/unsign jwt rockblock-web-pk {:alg :rs256})]
-;      (println data)
-;      (println jwt)
-;      (println unsigned))))
+(defn get-cubesat-message-binary
+  "Gets the string encoded binary data sent by the cubesat as a java nio ByteBuffer"
+  [rockblock-report]
+  (-> (:message rockblock-report)
+      (hex/hex-str-to-bytes)
+      (buffer/from-byte-array)))
+
+
+;;------------------------------- CUBESAT DATA -------------------------------------------------------------------------
+
+(def ^:const opcodes
+  "Packet opcodes for cubesat (see Alpha documentation for specification)"
+  {21 ::normal-report
+   22 ::normal-report-faults
+   42 ::ttl
+   69 ::special-report ;deprecated? Use the 7x opcodes for specific reports
+   70 ::imu
+   71 ::photoresistor
+   72 ::temperature
+   73 ::inhibs
+   74 ::rbf
+   75 ::current-sensor
+   76 ::battery-voltage
+   77 ::sd-card
+   78 ::button})
+
+(defn read-opcode
+  "Reads the opcode of an incoming packet"
+  [packet]
+  (-> packet
+      (reader/read-uint8)
+      opcodes))
+
+(defn read-image-data
+  "Reads image data from a packet using the specified cubesat protocol in the Alpha documentation.
+  Image is received in fragments, 66 bytes each, which must be assembled into the full image
+  after receiving all fragments. The serial number is which image is being sent, and the fragment number
+  is which part of the image being sent"
+  [packet]
+  (reader/read-structure packet
+                         [:image-serial-number ::reader/uint16
+                          :image-fragment-number ::reader/uint8
+                          :raw-image-data ::reader/byte-array 66]))
+
+(defn read-imu-data
+  "Reads IMU data from an incoming packet using cubesat protocol specified in the Alpha documentation"
+  [packet]
+  (reader/read-structure packet
+                         [:x-mag ::reader/uint8
+                          :y-mag ::reader/uint8
+                          :z-mag ::reader/uint8
+                          :x-gyro ::reader/uint8
+                          :y-gyro ::reader/uint8
+                          :z-gyro ::reader/uint8
+                          :x-accel ::reader/uint8
+                          :y-accel ::reader/uint8
+                          :z-accel ::reader/uint8
+                          :imu-temp ::reader/uint8
+                          :temp ::reader/uint8
+                          :solar-current ::reader/uint8
+                          :battery-voltage ::reader/uint8]))

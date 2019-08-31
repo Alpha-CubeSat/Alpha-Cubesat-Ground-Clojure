@@ -1,4 +1,5 @@
-{:telemetry {:elasticsearch-indices {:rockblock "rockblock-data"}}
+{:telemetry {:elasticsearch-indices {:rockblock "rockblock-data"
+                                     :cubesat "cubesat-data"}}
  :database {:elasticsearch {:host "http://localhost"
                             :port 9200
-                            :conn-config {:timeout 5000}}}}
+                            :conn-config {:content-type :json}}}}

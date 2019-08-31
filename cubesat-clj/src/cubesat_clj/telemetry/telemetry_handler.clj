@@ -3,18 +3,21 @@
   and processes that data."
   (:require [ring.util.http-response :as http]
             [cubesat-clj.databases.elasticsearch :as es]
-            [cubesat-clj.telemetry.telemetry-config :as cfg]))
+            [cubesat-clj.config :as cfg]
+            [cubesat-clj.telemetry.telemetry-protocol :as protocol]))
 
 (defn db-indices
   "Gets the elasticsearch indices from the telemetry configuration"
   []
-  (:elasticsearch-indices (cfg/get-config)))
+  (-> (cfg/get-config) :telemetry :elasticsearch-indices))
 
 (defn handle-report!
-  "Handles a report sent by the rockblock web service API"
+  "Handles a report sent by the rockblock web service API.
+  Does not use data sent in report, but instead that which is decoded from
+  the provided JWT"
   [rockblock-report]
-  (let [content (:message rockblock-report)
-        timestamp (:at rockblock-report)]
-    (println "Got Report:" "\r\n" rockblock-report "\r\n\r\n")
-    (es/index! (:rockblock (db-indices)) es/daily-index-strategy rockblock-report)
-    (http/ok)))
+  (if-let [report-data (protocol/verify-rockblock-request rockblock-report)]
+    (do (println "Got Report:" "\r\n" report-data "\r\n\r\n")
+        (es/index! (:rockblock (db-indices)) es/daily-index-strategy report-data)
+        (http/ok))
+    (http/unauthorized)))

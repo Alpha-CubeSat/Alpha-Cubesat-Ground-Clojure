@@ -17,6 +17,9 @@
       (.get buffer bytes 0 length)
       bytes))
 
+  (remaining [buffer]
+    (.remaining buffer))
+
   (skip [buffer length]
     (.position buffer (+ length (.position buffer))))
 

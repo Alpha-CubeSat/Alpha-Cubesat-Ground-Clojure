@@ -15,6 +15,7 @@
   (read-float32 [source])
   (read-bytes [source amount])
   (skip [source amount])
+  (remaining [source])
   (reset [source]))
 
 (defn read-type [reader type]
@@ -48,6 +49,9 @@
 
            [:- length & more]
             (do (skip reader length) (recur more result))
+
+           [name ::byte-array ::all-remaining]
+            (assoc result name (read-bytes reader (remaining reader)))
 
            [name ::byte-array length & more]
             (recur more (assoc result name (read-bytes reader length)))

@@ -103,14 +103,18 @@
 
 (defn read-image-data
   "Reads image data from a packet using the specified cubesat protocol in the Alpha documentation.
-  Image is received in fragments, 66 bytes each, which must be assembled into the full image
+  Image is received in fragments, :data-length bytes each, which must be assembled into the full image
   after receiving all fragments. The serial number is which image is being sent, and the fragment number
   is which part of the image being sent"
   [packet]
-  (reader/read-structure packet
-                         [:image-serial-number ::reader/uint16
-                          :image-fragment-number ::reader/uint8
-                          :raw-image-data ::reader/byte-array 66]))
+  (let [metadata (reader/read-structure packet
+                                        [:image-serial-number ::reader/uint16
+                                         :image-fragment-number ::reader/uint8
+                                         :image-max-fragments ::reader/uint8
+                                         :data-length ::reader/uint8])
+        image-fragment (reader/read-structure packet
+                                              [:image-data ::reader/byte-array (:data-length metadata)])]
+    (merge metadata image-fragment)))
 
 (defn read-imu-data
   "Reads IMU data from an incoming packet using cubesat protocol specified in the Alpha documentation"

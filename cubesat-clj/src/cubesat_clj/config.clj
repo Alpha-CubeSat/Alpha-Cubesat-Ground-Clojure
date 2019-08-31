@@ -11,10 +11,11 @@
   "Format for configuration; includes 'sub-configurations'
   for all modules such as telemetry"
   {:telemetry {:elasticsearch-indices {:rockblock s/Str
-                                       :cubesat s/Str}}
-   :database {:elasticsearch {:host s/Str
-                              :port s/Int
-                              :conn-config s/Any}}})
+                                       :cubesat   s/Str}}
+   :database  {:elasticsearch {:host        s/Str
+                               :port        s/Int
+                               :conn-config s/Any}
+               :image         {:root s/Str}}})
 
 (def config
   "Atem that stores the config data"
@@ -33,4 +34,4 @@
   []
   (if @config
     @config
-    (load-config!)))
+    (do (load-config!) @config)))

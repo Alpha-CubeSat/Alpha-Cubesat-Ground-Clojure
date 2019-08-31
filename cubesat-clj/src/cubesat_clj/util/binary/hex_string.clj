@@ -11,6 +11,7 @@
 
 (defn hex-str-to-bytes [hex-str]
   "Decodes a hex string into a java array of bytes"
-  (byte-array (map
-         (fn [[x y]] (byte (Integer/parseInt (str x y) 16)))
-         (partition 2 hex-str))))
+  (into-array Byte/TYPE
+              (map
+                (fn [[x y]] (unchecked-byte (Integer/parseInt (str x y) 16)))
+                (partition 2 hex-str))))

@@ -10,9 +10,8 @@
   "Makes a connection to an Elasticsearch database based on
   configured host, port, and options"
   []
-  (let [{:keys [host port conn-config]} (-> (cfg/get-config)
-                                               :database
-                                               :elasticsearch)
+  (let [es-config (-> (cfg/get-config) :database :elasticsearch)
+        {:keys [host port conn-config]} es-config
         endpoint (str host ":" port)]
     (esr/connect endpoint conn-config)))
 

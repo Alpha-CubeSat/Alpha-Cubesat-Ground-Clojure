@@ -2,4 +2,5 @@
                                      :cubesat "cubesat-data"}}
  :database {:elasticsearch {:host "http://localhost"
                             :port 9200
-                            :conn-config {:content-type :json}}}}
+                            :conn-config {:content-type :json}}
+            :image {:root "cubesat_images"}}}

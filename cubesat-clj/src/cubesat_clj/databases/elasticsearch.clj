@@ -1,13 +1,20 @@
 (ns cubesat-clj.databases.elasticsearch
   "Functions for storing data in ElasticSearch"
   (:require [clojurewerkz.elastisch.rest :as esr]
-            [clojurewerkz.elastisch.rest.document :as esd])
+            [clojurewerkz.elastisch.rest.document :as esd]
+            [cubesat-clj.config :as cfg])
   (:import (java.util Date)
            (java.text SimpleDateFormat)))
 
-;; Some default config stuff until a database config file is needed
-(def endpoint "http://127.0.0.1:9200")
-(def conn-config {:conn-timeout 5000})
+(defn get-connection
+  "Makes a connection to an Elasticsearch database based on
+  configured host, port, and options"
+  []
+  (let [{:keys [host port conn-config]} (-> (cfg/get-config)
+                                               :database
+                                               :elasticsearch)
+        endpoint (str host ":" port)]
+    (esr/connect endpoint conn-config)))
 
 (defn literal-index-strategy
   "Returns the input name"
@@ -30,5 +37,5 @@
   to new Elasticsearch versions. Then, to differentiate different data,
   use separate indices. This is now the approach recommended by Elastic."
   [index-base-name naming-strategy content]
-  (let [conn (esr/connect endpoint conn-config)]
+  (let [conn (get-connection)]
     (esd/create conn (naming-strategy index-base-name) "_doc" content)))

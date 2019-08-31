@@ -1,1 +1,4 @@
-{:elasticsearch-indices {:rockblock "rockblock-report"}}
+{:telemetry {:elasticsearch-indices {:rockblock "rockblock-data"}}
+ :database {:elasticsearch {:host "http://localhost"
+                            :port 9200
+                            :conn-config {:timeout 5000}}}}

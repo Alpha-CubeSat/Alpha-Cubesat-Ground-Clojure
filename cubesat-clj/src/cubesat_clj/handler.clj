@@ -39,3 +39,5 @@
         :summary "Process a command to be sent to cubesat. TODO implement"
         :body [input {:value s/Str}]
         (ok (:value input))))))
+
+;

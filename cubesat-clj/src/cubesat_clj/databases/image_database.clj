@@ -2,14 +2,14 @@
   "For storing images on the local filesystem, and assembling them
    out of binary fragments"
   (:require [cubesat-clj.config :as cfg])
-  (:import (java.io File FileOutputStream FileInputStream)
-           (java.nio.file Path Files OpenOption StandardOpenOption)
-           (java.nio.file.attribute FileAttribute)))
+  (:import (java.io File FileOutputStream FileInputStream)))
+
 
 (defn- get-root-path
   "Gets the root directory of the image database as given in the config file"
   []
   (-> (cfg/get-config) :database :image :root))
+
 
 (defn save-fragment
   "saves an image fragment. Creates one if it doesn't exist using the following policy:
@@ -29,11 +29,13 @@
       (.flush)
       (.close))))
 
-(defn- sort-fragment-files
-  "Sorts fragment files by name. They are numerically named,
+
+(defn- sort-numeric-files
+  "Sorts fragment files by name, stripping the extensions. They are numerically named,
   but '2.csfrag' should come before '10.csfrag'"
-  [files]
-  (sort-by #(-> % .getName (.replace ".csfrag" "") Integer/parseInt) files))
+  [files extension]
+  (sort-by #(-> % .getName (.replace extension "") Integer/parseInt) files))
+
 
 (defn try-save-image
   "Tries to assemble an image out of fragments. If there are enough, saves the image
@@ -51,8 +53,31 @@
         img-file-path (str img-dir "/" image-sn ".jpeg")]
     (.mkdirs (File. img-dir))                               ; make img dir if it doesnt exist
     (when (= num-fragments total-fragment-number)
-      (let [sorted-fragments (sort-fragment-files fragment-files)
+      (let [sorted-fragments (sort-numeric-files fragment-files ".csfrag")
             image-file (FileOutputStream. img-file-path)]
         (dorun (for [^File fragment sorted-fragments]
                  (.transferTo (FileInputStream. fragment) image-file)))
         (doto image-file (.flush) (.close))))))
+
+
+(defn get-images
+  "Returns a seq of images, sorted by id (so that they're chronological -
+  rockblock may send data out of order, using the serial number is
+  the only way to be sure of ordering)"
+  []
+  (let [image-files (rest (->> (str (get-root-path) "/img")
+                               clojure.java.io/file
+                               file-seq))]
+    (sort-numeric-files image-files ".jpeg")))
+
+
+(defn get-recent-images
+  "Gets the n most recently taken images (whose data has been fully received by ground)"
+  [n]
+  (take n (get-images)))
+
+
+(defn get-most-recent
+  "Gets the most recent complete image"
+  []
+  (get-recent-images 1))

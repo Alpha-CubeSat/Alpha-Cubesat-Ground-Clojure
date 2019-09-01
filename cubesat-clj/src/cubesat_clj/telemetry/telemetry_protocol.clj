@@ -51,12 +51,14 @@
    (s/optional-key :appMessageAddress) [s/Str]
    (s/optional-key :appMessageContent) s/Str
    (s/optional-key :beacons)           [s/Str]
-   s/Any s/Any})
+   s/Any                               s/Any})
+
 
 (def rockblock-web-pk
   "Public key provided for JWT verification by rockblock web services documentation"
   (keys/str->public-key
     "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAlaWAVJfNWC4XfnRx96p9cztBcdQV6l8aKmzAlZdpEcQR6MSPzlgvihaUHNJgKm8t5ShR3jcDXIOI7er30cIN4/9aVFMe0LWZClUGgCSLc3rrMD4FzgOJ4ibD8scVyER/sirRzf5/dswJedEiMte1ElMQy2M6IWBACry9u12kIqG0HrhaQOzc6Tr8pHUWTKft3xwGpxCkV+K1N+9HCKFccbwb8okRP6FFAMm5sBbw4yAu39IVvcSL43Tucaa79FzOmfGs5mMvQfvO1ua7cOLKfAwkhxEjirC0/RYX7Wio5yL6jmykAHJqFG2HT0uyjjrQWMtoGgwv9cIcI7xbsDX6owIDAQAB\n-----END PUBLIC KEY-----"))
+
 
 (defn verify-rockblock-request [rockblock-report]
   "Uses jwt to verify data sent by rockblock web services. Returns the data if valid,
@@ -67,6 +69,7 @@
        (catch Exception e
          (do (str "Caught exception unsigning rockblock data: " (.printStackTrace e))
              nil))))
+
 
 (defn get-cubesat-message-binary
   "Gets the string encoded binary data sent by the cubesat as a java nio ByteBuffer"
@@ -83,7 +86,7 @@
   {21 ::normal-report
    22 ::normal-report-faults
    42 ::ttl
-   69 ::special-report ;deprecated? Use the 7x opcodes for specific reports
+   69 ::special-report                                      ;deprecated? Use the 7x opcodes for specific reports
    70 ::imu
    71 ::photoresistor
    72 ::temperature
@@ -94,12 +97,14 @@
    77 ::sd-card
    78 ::button})
 
+
 (defn read-opcode
   "Reads the opcode of an incoming packet"
   [packet]
   (-> packet
       (reader/read-uint8)
       opcodes))
+
 
 (defn read-image-data
   "Reads image data from a packet using the specified cubesat protocol in the Alpha documentation.
@@ -112,9 +117,10 @@
                                          :image-fragment-number ::reader/uint8
                                          :image-max-fragments ::reader/uint8
                                          :data-length ::reader/uint8])
-        image-fragment (reader/read-structure packet
-                                              [:image-data ::reader/byte-array (:data-length metadata)])]
-    (merge metadata image-fragment)))
+        fragment (reader/read-structure packet
+                                        [:image-data ::reader/byte-array (:data-length metadata)])]
+    (merge metadata fragment)))
+
 
 (defn read-imu-data
   "Reads IMU data from an incoming packet using cubesat protocol specified in the Alpha documentation"

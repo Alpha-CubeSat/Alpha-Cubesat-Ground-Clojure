@@ -4,7 +4,8 @@
   (:require [ring.util.http-response :as http]
             [cubesat-clj.databases.elasticsearch :as es]
             [cubesat-clj.config :as cfg]
-            [cubesat-clj.telemetry.telemetry-protocol :as protocol]))
+            [cubesat-clj.telemetry.telemetry-protocol :as protocol]
+            [cubesat-clj.databases.image-database :as img]))
 
 
 (defn- db-indices
@@ -12,24 +13,39 @@
   []
   (-> (cfg/get-config) :telemetry :elasticsearch-indices))
 
+
 (defn- save-rockblock-report
   "Saves a rockblock report to elasticsearch"
-  [rockblock-report]
-  (es/index! (:rockblock (db-indices)) es/daily-index-strategy report-data))
+  [data]
+  (es/index! (:rockblock (db-indices)) es/daily-index-strategy data))
+
+
+(defn- save-cubesat-data
+  "Saves a cubesat report to elasticsearch"
+  [data]
+  (es/index! (:cubesat (db-indices)) es/daily-index-strategy data))
+
+
+(defn- handle-ttl-data
+  "Process image fragment data sent by cubesat. Image comes over several fragments as
+  rockblock only supports so much protocol. Image 'fragments' are then assembled into full images
+  when fully collected, and saved into the image database"
+  [{:keys [at transmit_time imei]} packet]
+  (let [image-data (protocol/read-image-data packet)
+        {:keys [image-serial-number image-fragment-number image-max-fragments image-data]} image-data
+        report (assoc image-data :imei imei :at at :transmit-time transmit_time)]
+    (save-cubesat-data report)
+    (img/save-fragment image-serial-number image-fragment-number image-data)
+    (img/try-save-image image-serial-number image-max-fragments)))
 
 
 (defn- handle-imu-data
   "Processes IMU data from a cubesat packet by saving the report to Elasticsearch
   with some metadata from the rockblock data"
-  [rockblock-report packet]
+  [{:keys [at transmit_time imei]} packet]
   (let [imu-data (protocol/read-imu-data packet)
-        timestamp (:at rockblock-report)
-        transmit-time (:transmit_time rockblock-report)
-        imei (:imei rockblock-report)
-        report (assoc imu-data :imei imei
-                               :timestamp timestamp
-                               :transmit-time transmit-time)]
-    (es/index! (:cubesat db-indices) es/daily-index-strategy report)))
+        report (assoc imu-data :imei imei :at at :transmit-time transmit_time)]
+    (save-cubesat-data report)))
 
 
 (defn- handle-cubesat-data
@@ -39,7 +55,8 @@
   (let [packet (protocol/get-cubesat-message-binary rockblock-report)
         op (protocol/read-opcode packet)]
     (case op
-      ::protocol/imu (handle-imu-data rockblock-report packet))))
+      ::protocol/imu (handle-imu-data rockblock-report packet)
+      ::protocol/ttl (handle-ttl-data rockblock-report packet))))
 
 
 (defn handle-report!

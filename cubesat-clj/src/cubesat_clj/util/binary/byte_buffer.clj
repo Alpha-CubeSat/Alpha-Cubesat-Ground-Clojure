@@ -26,8 +26,10 @@
   (reset [buffer]
     (.rewind buffer)))
 
+
 (defn from-byte-array [bytes]
   (ByteBuffer/wrap bytes))
+
 
 (defn set-endianness [buffer endianness]
   (do (.order endianness)

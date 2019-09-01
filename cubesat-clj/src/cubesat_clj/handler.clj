@@ -5,7 +5,10 @@
             [ring.util.http-response :refer :all]
             [cubesat-clj.telemetry.telemetry-protocol :as rockblock]
             [cubesat-clj.telemetry.telemetry-handler :as telemetry]
-            [schema.core :as s]))
+            [cubesat-clj.databases.image-database :as img]
+            [schema.core :as s]
+            [clojure.java.io :as io])
+  (:import (java.io File)))
 
 (def app
   (api
@@ -33,6 +36,15 @@
 
     (context "/api" []
       :tags ["API"]
+
+      (GET "/recent" []
+        :summary "Returns the most recent ttl data fully received by ground"
+        :return File
+        :produces ["image/jpeg"]
+        (-> (img/get-most-recent)
+            (io/input-stream)
+            (ok)
+            (header "Content-Type" "image/jpeg")))
 
       (POST "/control" [] ;;TODO
         :return s/Str

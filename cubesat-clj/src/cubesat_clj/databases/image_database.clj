@@ -80,4 +80,4 @@
 (defn get-most-recent
   "Gets the most recent complete image"
   []
-  (get-recent-images 1))
+  (first (get-recent-images 1)))

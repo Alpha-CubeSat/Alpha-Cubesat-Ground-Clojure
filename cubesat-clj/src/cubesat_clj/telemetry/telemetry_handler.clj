@@ -15,9 +15,14 @@
 
 
 (defn- save-rockblock-report
-  "Saves a rockblock report to elasticsearch"
+  "Saves a rockblock report to elasticsearch. Gets latitude and longitude
+   data and makes a single field out of them"
   [data]
-  (es/index! (:rockblock (db-indices)) es/daily-index-strategy data))
+  (let [lat (:iridium_latitude data)
+        lon (:iridium_longitude data)
+        location {:lat lat, :lon lon}
+        result (assoc data :location location)]
+    (es/index! (:rockblock (db-indices)) es/daily-index-strategy result)))
 
 
 (defn- save-cubesat-data
@@ -30,10 +35,10 @@
   "Process image fragment data sent by cubesat. Image comes over several fragments as
   rockblock only supports so much protocol. Image 'fragments' are then assembled into full images
   when fully collected, and saved into the image database"
-  [{:keys [at transmit_time imei]} packet]
+  [{:keys [transmit_time imei]} packet]
   (let [image-data (protocol/read-image-data packet)
         {:keys [image-serial-number image-fragment-number image-max-fragments image-data]} image-data
-        report (assoc image-data :imei imei :at at :transmit-time transmit_time)]
+        report (assoc image-data :imei imei :transmit-time transmit_time)]
     (save-cubesat-data report)
     (img/save-fragment image-serial-number image-fragment-number image-data)
     (img/try-save-image image-serial-number image-max-fragments)))
@@ -42,9 +47,9 @@
 (defn- handle-imu-data
   "Processes IMU data from a cubesat packet by saving the report to Elasticsearch
   with some metadata from the rockblock data"
-  [{:keys [at transmit_time imei]} packet]
+  [{:keys [transmit_time imei]} packet]
   (let [imu-data (protocol/read-imu-data packet)
-        report (assoc imu-data :imei imei :at at :transmit-time transmit_time)]
+        report (assoc imu-data :imei imei :transmit-time transmit_time)]
     (save-cubesat-data report)))
 
 
@@ -67,6 +72,7 @@
   (if-let [report-data (protocol/verify-rockblock-request rockblock-report)]
     (do (println "Got Report:" "\r\n" report-data "\r\n\r\n")
         (save-rockblock-report report-data)
-        (handle-cubesat-data report-data)
+        (when (:data report-data)
+          (handle-cubesat-data report-data))
         (http/ok))
     (http/unauthorized)))

@@ -20,19 +20,20 @@
   data and information, along with optionally sent fields, and some unknown ones
   that may not be consistent with the rockblock docs.
 
-  The 'message' field contains the hex-encoded binary data sent by the satellite."
-  {:id                                 s/Str
-   :transport                          s/Str
-   ;:imei                               s/Str
+  The 'data' field contains the hex-encoded binary data sent by the satellite."
+  {(s/optional-key :id)                s/Str
+   (s/optional-key :transport)         s/Str
+   :imei                               s/Str
    :device_type                        s/Str
    :serial                             s/Int
    :momsn                              s/Int
    :transmit_time                      s/Inst
-   ;:message                            s/Str
-   :at                                 s/Inst
+   :data                               s/Str
+   (s/optional-key :message)           s/Str
+   (s/optional-key :at)                s/Inst
    :JWT                                s/Str
-   (s/optional-key :iridium_longitude) s/Num
-   (s/optional-key :iridium_latitude)  s/Num
+   :iridium_longitude                  s/Num
+   :iridium_latitude                   s/Num
    (s/optional-key :cep)               s/Int
    (s/optional-key :trigger)           s/Str
    (s/optional-key :source)            s/Str
@@ -74,7 +75,7 @@
 (defn get-cubesat-message-binary
   "Gets the string encoded binary data sent by the cubesat as a java nio ByteBuffer"
   [rockblock-report]
-  (-> (:message rockblock-report)
+  (-> (:data rockblock-report)
       (hex/hex-str-to-bytes)
       (buffer/from-byte-array)))
 
@@ -112,30 +113,33 @@
   after receiving all fragments. The serial number is which image is being sent, and the fragment number
   is which part of the image being sent"
   [packet]
-  (let [metadata (reader/read-structure packet
-                                        [:image-serial-number ::reader/uint16
-                                         :image-fragment-number ::reader/uint8
-                                         :image-max-fragments ::reader/uint8
-                                         :data-length ::reader/uint8])
-        fragment (reader/read-structure packet
-                                        [:image-data ::reader/byte-array (:data-length metadata)])]
+  (let [metadata (reader/read-structure
+                   packet
+                   [:image-serial-number ::reader/uint16
+                    :image-fragment-number ::reader/uint8
+                    :image-max-fragments ::reader/uint8
+                    :data-length ::reader/uint8])
+        fragment (reader/read-structure
+                   packet
+                   [:image-data ::reader/byte-array (:data-length metadata)])]
     (merge metadata fragment)))
 
 
 (defn read-imu-data
   "Reads IMU data from an incoming packet using cubesat protocol specified in the Alpha documentation"
   [packet]
-  (reader/read-structure packet
-                         [:x-mag ::reader/uint8
-                          :y-mag ::reader/uint8
-                          :z-mag ::reader/uint8
-                          :x-gyro ::reader/uint8
-                          :y-gyro ::reader/uint8
-                          :z-gyro ::reader/uint8
-                          :x-accel ::reader/uint8
-                          :y-accel ::reader/uint8
-                          :z-accel ::reader/uint8
-                          :imu-temp ::reader/uint8
-                          :temp ::reader/uint8
-                          :solar-current ::reader/uint8
-                          :battery-voltage ::reader/uint8]))
+  (reader/read-structure
+    packet
+    [:x-mag ::reader/uint8
+     :y-mag ::reader/uint8
+     :z-mag ::reader/uint8
+     :x-gyro ::reader/uint8
+     :y-gyro ::reader/uint8
+     :z-gyro ::reader/uint8
+     :x-accel ::reader/uint8
+     :y-accel ::reader/uint8
+     :z-accel ::reader/uint8
+     :imu-temp ::reader/uint8
+     :temp ::reader/uint8
+     :solar-current ::reader/uint8
+     :battery-voltage ::reader/uint8]))

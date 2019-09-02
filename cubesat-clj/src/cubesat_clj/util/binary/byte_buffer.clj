@@ -6,8 +6,23 @@
 (extend-type ByteBuffer
   binary-reader
 
+  (read-uint32 [buffer]
+    (bit-and (.getInt buffer) 0xFFFFFFFFFFFFFFFF))
+
   (read-int32 [buffer]
     (.getInt buffer))
+
+  (read-uint16 [buffer]
+    (bit-and (.getShort buffer) 0xFFFFFFFFFFFFFFFF))
+
+  (read-int16 [buffer]
+    (.getShort buffer))
+
+  (read-uint8 [buffer]
+    (bit-and (.get buffer) 0xFFFFFFFFFFFFFFFF))
+
+  (read-int8 [buffer]
+    (.get buffer))
 
   (read-float32 [buffer]
     (.getFloat buffer))
@@ -17,19 +32,17 @@
       (.get buffer bytes 0 length)
       bytes))
 
-  (remaining [buffer]
-    (.remaining buffer))
-
   (skip [buffer length]
     (.position buffer (+ length (.position buffer))))
+
+  (remaining [buffer]
+    (.remaining buffer))
 
   (reset [buffer]
     (.rewind buffer)))
 
-
 (defn from-byte-array [bytes]
   (ByteBuffer/wrap bytes))
-
 
 (defn set-endianness [buffer endianness]
   (do (.order endianness)

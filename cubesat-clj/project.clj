@@ -7,7 +7,7 @@
                   [aero "1.1.3"]
                   [buddy/buddy-sign "3.1.0"]]
    :ring {:handler cubesat-clj.handler/app}
-   :uberjar-name "server.jar"
+   :uberjar-name "cubesat.jar"
    :profiles {:dev {:dependencies [[javax.servlet/javax.servlet-api "3.1.0"]]
                     :plugins      [[lein-ring "0.12.5"]
                                    [lein-codox "0.10.7"]]}})

@@ -17,10 +17,12 @@
                                :conn-config {(s/optional-key :basic-auth)   [s/Str] ; ["user" "pass"]
                                              (s/optional-key :conn-timeout) s/Int ; timeout in millis
                                              :content-type                  (s/enum :json)}} ; Elastich requires json but doesnt use it by default
-               :image         {:root s/Str}}})
+               :image         {:root s/Str}}
+   :control {:rockblock {:imei s/Str
+                         :basic-auth [s/Str s/Str]}}})
 
 (def config
-  "Atem that stores the config data"
+  "Atom that stores the config data"
   (atom nil))
 
 (defn load-config!

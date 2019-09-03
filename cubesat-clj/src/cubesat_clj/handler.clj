@@ -4,13 +4,15 @@
   (:require [compojure.api.sweet :refer :all]
             [compojure.api.exception :as ex]
             [ring.util.http-response :refer :all]
-            [cubesat-clj.telemetry.telemetry-protocol :as rockblock]
+            [cubesat-clj.telemetry.telemetry-protocol :as downlink]
             [cubesat-clj.telemetry.telemetry-handler :as telemetry]
             [cubesat-clj.databases.image-database :as img]
             [schema.core :as s]
             [clojure.java.io :as io]
             [muuntaja.core :as m]
-            [ring.util.http-response :as response])
+            [ring.util.http-response :as response]
+            [cubesat-clj.control.control-protocol :as uplink]
+            [cubesat-clj.control.control-handler :as control])
   (:import (java.io File InputStreamReader ByteArrayInputStream InputStream)
            (java.nio.charset Charset)))
 
@@ -69,7 +71,7 @@
         :middleware [fix-rockblock-date]
         :return nil
         :summary "Receive data from rockblock web services"
-        :body [report rockblock/RockblockReport]
+        :body [report downlink/RockblockReport]
         (telemetry/handle-report! report)))
 
     (context "/api" []
@@ -84,8 +86,8 @@
             (ok)
             (header "Content-Type" "image/jpeg")))
 
-      (POST "/control" []                                   ;;TODO
-        :return s/Str
-        :summary "Process a command to be sent to cubesat. TODO implement"
-        :body [input {:value s/Str}]
-        (ok (:value input))))))
+      (POST "/control" []
+        :return {:result s/Str}
+        :summary "Process a command to be sent to cubesat."
+        :body [command uplink/Command]
+        (control/handle-command! command)))))

@@ -31,7 +31,7 @@
     ::float64 (read-float64 reader)
     ::float32 (read-float32 reader)))
 
-(defn read-structure [reader structure]
+(defn read-structure
   "Uses a reader to read the input structure. Supports basic types,
   buffers, and skipping bytes. Uses a data-driven interface with a vector
   for 'structure' where names and types are passed in, and returns
@@ -42,6 +42,7 @@
                               :item2 ::byte-array 22])
   reads an integer, skips 5 bytes, reads a length 22 byte array,
   and returns a map with :item1, :item2, and their corresponding values."
+  [reader structure]
   (loop [remaining-structure structure
          result {}]
     (match remaining-structure

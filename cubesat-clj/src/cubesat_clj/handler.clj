@@ -87,7 +87,7 @@
             (header "Content-Type" "image/jpeg")))
 
       (POST "/control" []
-        :return {:result s/Str}
+        :return {:response s/Str}
         :summary "Process a command to be sent to cubesat."
         :body [command uplink/Command]
         (control/handle-command! command)))))

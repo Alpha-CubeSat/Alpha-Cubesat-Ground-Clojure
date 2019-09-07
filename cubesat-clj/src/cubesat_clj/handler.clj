@@ -17,7 +17,6 @@
            (java.nio.charset Charset)))
 
 
-
 (defn log-error
   "Since rockblock sends weird requests, and then doesn't tell you the responses it gets,
   we override compojure-api's error handling to log everything"
@@ -25,6 +24,7 @@
   (fn [^Exception e data request]
     (do (println "[DEBUG] Error: ")
         (println (.getMessage e))
+        (.printStackTrace e)
         (println "DATA: " data)
         (println "REQUEST: " request)
         (f {:message (.getMessage e), :type type}))))
@@ -34,9 +34,10 @@
   (fn [request]
     (let [time (get-in request [:body-params :transmit_time])
           formatted-time (str "20" (.replace time " " "T") "Z") ; Warning: This hack will cease to work in the year 2100
-          fixed-request (assoc-in request [:body-params :transmit_time] formatted-time)]
+          fixed-request (assoc-in request [:body-params :fixed-transmit-time] formatted-time)
+          fixed-request-2 (assoc-in fixed-request [:body-params :transmit_time] formatted-time)]
       (println "middleware fixed time: " formatted-time)
-      (handler fixed-request))))
+      (handler fixed-request-2))))
 
 
 (def app

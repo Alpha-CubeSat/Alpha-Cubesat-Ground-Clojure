@@ -13,13 +13,13 @@
     (.getInt buffer))
 
   (read-uint16 [buffer]
-    (bit-and (.getShort buffer) 0xFFFFFFFFFFFFFFFF))
+    (bit-and (.getShort buffer) 0xFFFFFFFF))
 
   (read-int16 [buffer]
     (.getShort buffer))
 
   (read-uint8 [buffer]
-    (bit-and (.get buffer) 0xFFFFFFFFFFFFFFFF))
+    (bit-and (.get buffer) 0xFFFFFFFF))
 
   (read-int8 [buffer]
     (.get buffer))

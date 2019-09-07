@@ -5,7 +5,8 @@
             [cubesat-clj.databases.elasticsearch :as es]
             [cubesat-clj.config :as cfg]
             [cubesat-clj.telemetry.telemetry-protocol :as protocol]
-            [cubesat-clj.databases.image-database :as img]))
+            [cubesat-clj.databases.image-database :as img])
+  (:import [java.nio ByteBuffer]))
 
 
 (defn- db-indices
@@ -58,6 +59,7 @@
   and depending on the result, parses and stores the corresponding data"
   [rockblock-report]
   (let [packet (protocol/get-cubesat-message-binary rockblock-report)
+        ;a (println "REMAINING: " (.remaining packet) "POS:" (.position packet) (.rewind packet))
         op (protocol/read-opcode packet)]
     (case op
       ::protocol/imu (handle-imu-data rockblock-report packet)
@@ -69,7 +71,8 @@
   Does not use data sent in report, but instead that which is decoded from
   the provided JWT"
   [rockblock-report]
-  (if-let [report-data (protocol/verify-rockblock-request rockblock-report)]
+  (if-let [report-data (assoc (protocol/verify-rockblock-request rockblock-report)
+                         :transmit_time (:fixed-transmit-time rockblock-report))]
     (do (println "Got Report:" "\r\n" report-data "\r\n\r\n")
         (save-rockblock-report report-data)
         (when (:data report-data)

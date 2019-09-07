@@ -19,7 +19,6 @@
   {:imei      s/Str
    :operation (s/conditional
                 ;; TODO the rest of them
-
                 (is-type? :report) {:type (s/eq :report)}
 
                 (is-type? :imu) {:type (s/eq :imu)}

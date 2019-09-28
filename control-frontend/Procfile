@@ -1,0 +1,1 @@
+web: java $JVM_OPTS -cp target/control-frontend.jar clojure.main -m control-frontend.server

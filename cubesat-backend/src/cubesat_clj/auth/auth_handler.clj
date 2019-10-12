@@ -39,6 +39,6 @@
 
 (defn wrap-auth [handler]
   (-> handler
-      (wrap-authentication backend)
+      (wrap-check-auth)
       (wrap-authorization backend)
-      (wrap-check-auth)))
+      (wrap-authentication backend)))

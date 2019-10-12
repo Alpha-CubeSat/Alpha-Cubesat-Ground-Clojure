@@ -39,7 +39,7 @@
                    ::ex/request-validation  (log-error response/internal-server-error :unknown)
                    ::ex/response-validation (log-error response/internal-server-error :unknown)
                    ::ex/default             (log-error response/internal-server-error :unknown)}}
-     :swagger    {:ui   "/api"
+     :swagger    {:ui   "/"
                   :spec "/swagger.json"
                   :data {:info {:title       "Cubesat Ground"
                                 :description "Alpha Cubesat Ground System"}
@@ -87,6 +87,8 @@
       (GET "/img/recent" []
         :summary "Returns the most recent ttl data fully received by ground"
         :return File
+        :middleware [auth/wrap-auth]
+        :header-params [authorization :- s/Str]
         :produces ["image/jpeg"]
         (-> (img/get-most-recent)
             (io/input-stream)
@@ -96,5 +98,7 @@
       (POST "/control" []
         :return {:response s/Str}
         :summary "Process a command to be sent to cubesat."
+        :middleware [auth/wrap-auth]
+        :header-params [authorization :- s/Str]
         :body [command uplink/Command]
         (control/handle-command! command)))))

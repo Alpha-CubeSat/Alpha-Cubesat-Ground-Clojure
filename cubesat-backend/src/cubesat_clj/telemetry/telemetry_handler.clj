@@ -32,6 +32,20 @@
   (es/index! (:cubesat (db-indices)) es/daily-index-strategy data))
 
 
+(defn- handle-bad-data
+  "Process a message with an unknown opcode or misformed data by saving the exception in elasticsearch"
+  [{:keys [transmit_time imei data]} packet exception-str]
+  (let [report (assoc {} :imei imei :transmit-time transmit_time :error exception-str :raw-data data)]
+    (save-cubesat-data report)))
+
+
+(defn- handle-no-data
+  "Process empty respnose from cubesat by just logging that it happened into into ES"
+  [{:keys [transmit_time imei]} packet]
+  (let [report (assoc {} :imei imei :transmit-time transmit_time)]
+    (save-cubesat-data report)))
+
+
 (defn- handle-ttl-data
   "Process image fragment data sent by cubesat. Image comes over several fragments as
   rockblock only supports so much protocol. Image 'fragments' are then assembled into full images
@@ -60,9 +74,11 @@
   [rockblock-report]
   (let [packet (protocol/get-cubesat-message-binary rockblock-report)
         op (protocol/read-opcode packet)]
-    (case op
-      ::protocol/imu (handle-imu-data rockblock-report packet)
-      ::protocol/ttl (handle-ttl-data rockblock-report packet))))
+    (try (case op
+           ::protocol/empty-packet (handle-no-data rockblock-report packet)
+           ::protocol/imu (handle-imu-data rockblock-report packet)
+           ::protocol/ttl (handle-ttl-data rockblock-report packet))
+         (catch Exception e (handle-bad-data rockblock-report packet (.getMessage e))))))
 
 
 (defn handle-report!
@@ -78,3 +94,13 @@
           (handle-cubesat-data report-data))
         (http/ok))
     (http/unauthorized)))
+
+
+(defn fix-rockblock-date [handler]
+  (fn [request]
+    (let [time (get-in request [:body-params :transmit_time])
+          formatted-time (str "20" (.replace time " " "T") "Z") ; Warning: This hack will cease to work in the year 2100
+          fixed-request (assoc-in request [:body-params :fixed-transmit-time] formatted-time)
+          fixed-request-2 (assoc-in fixed-request [:body-params :transmit_time] formatted-time)]
+      (println "middleware fixed time: " formatted-time)
+      (handler fixed-request-2))))

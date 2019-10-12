@@ -102,9 +102,11 @@
 (defn read-opcode
   "Reads the opcode of an incoming packet"
   [packet]
-  (-> packet
-      (reader/read-uint8)
-      opcodes))
+  (if (= (reader/remaining packet) 0)
+    ::empty-packet
+    (-> packet
+        (reader/read-uint8)
+        opcodes)))
 
 
 (defn read-image-data

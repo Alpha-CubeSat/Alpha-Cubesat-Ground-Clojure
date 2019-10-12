@@ -30,16 +30,6 @@
         (f {:message (.getMessage e), :type type}))))
 
 
-(defn fix-rockblock-date [handler]
-  (fn [request]
-    (let [time (get-in request [:body-params :transmit_time])
-          formatted-time (str "20" (.replace time " " "T") "Z") ; Warning: This hack will cease to work in the year 2100
-          fixed-request (assoc-in request [:body-params :fixed-transmit-time] formatted-time)
-          fixed-request-2 (assoc-in fixed-request [:body-params :transmit_time] formatted-time)]
-      (println "middleware fixed time: " formatted-time)
-      (handler fixed-request-2))))
-
-
 (def app
   (api
     {:exceptions {:handlers
@@ -69,7 +59,7 @@
         (ok "pong"))
 
       (POST "/rockblock" []
-        :middleware [fix-rockblock-date]
+        :middleware [telemetry/fix-rockblock-date]
         :return nil
         :summary "Receive data from rockblock web services"
         :body [report downlink/RockblockReport]

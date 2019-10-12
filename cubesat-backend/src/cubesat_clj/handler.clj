@@ -12,7 +12,9 @@
             [muuntaja.core :as m]
             [ring.util.http-response :as response]
             [cubesat-clj.control.control-protocol :as uplink]
-            [cubesat-clj.control.control-handler :as control])
+            [cubesat-clj.control.control-handler :as control]
+            [cubesat-clj.auth.auth-handler :as auth]
+            [cubesat-clj.auth.auth-protocol :as auth-data])
   (:import (java.io File InputStreamReader ByteArrayInputStream InputStream)
            (java.nio.charset Charset)))
 
@@ -37,26 +39,40 @@
                    ::ex/request-validation  (log-error response/internal-server-error :unknown)
                    ::ex/response-validation (log-error response/internal-server-error :unknown)
                    ::ex/default             (log-error response/internal-server-error :unknown)}}
-     :swagger    {:ui   "/"
+     :swagger    {:ui   "/api"
                   :spec "/swagger.json"
                   :data {:info {:title       "Cubesat Ground"
                                 :description "Alpha Cubesat Ground System"}
-                         :tags [{:name "API", :description "Satellite control/data API"}
+                         :tags [{:name "Debug", :description "Miscellaneous requests for debugging/sanity checks"}
+                                {:name "Auth", :description "Login endpoint"}
+                                {:name "API", :description "Satellite control/data API"}
                                 {:name "Telemetry", :description "Rockblock web services telemetry endpoint"}]}}}
 
-    (context "/telemetry" []
-      :tags ["Telemetry"]
-
-      (POST "/echo" []
-        :consumes ["text/plain"]
-        :body [body s/Str]
-        (do (println "Echo: " body)
-            (ok body)))
+    (context "/debug" []
+      :tags ["Debug"]
 
       (GET "/ping" []
         :return s/Str
         :summary "Test the API"
         (ok "pong"))
+
+      (POST "/echo" []
+        :consumes ["text/plain"]
+        :body [body s/Str]
+        (do (println "Echo: " body)
+            (ok body))))
+
+    (context "/auth" []
+      :tags ["Auth"]
+
+      (POST "/login" []
+        :return {:token s/Str}
+        :summary "Authenticate to get a token for api access"
+        :body [credentials auth-data/LoginRequest]
+        (auth/handle-login credentials)))
+
+    (context "/telemetry" []
+      :tags ["Telemetry"]
 
       (POST "/rockblock" []
         :middleware [telemetry/fix-rockblock-date]

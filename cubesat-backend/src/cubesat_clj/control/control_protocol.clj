@@ -49,6 +49,15 @@
    :echo 5})
 
 
+(defn- pad-single-digit
+  "Pads a string with '0's (the character '0', not the number) at the beginning until it is length 2"
+  [st]
+  (let [s (str st)]
+    (if (< (.length s) 2)
+      (recur (str "0" s))
+      s)))
+
+
 (defn- get-no-arg
   "Since most commands are 0 or 1 argument; a helper function
   that returns the string representation for a no-argument
@@ -56,9 +65,9 @@
 
   Example:
     (get-no-arg 20)
-    returns the string '20,' "
+    returns the string '20,!'"
   [operation]
-  (str (-> operation :type uplink-opcodes) ","))
+  (str (-> operation :type uplink-opcodes pad-single-digit) ",00" "!"))
 
 
 (defn- parse-single-arg
@@ -68,9 +77,9 @@
 
   Example:
     (parse-single-arg {:type :report :example 50} :example)
-    returns the string '1,50' "
+    returns the string '1,50!' "
   [operation key]
-  (str (-> operation :type uplink-opcodes) "," (key operation)))
+  (str (-> operation :type uplink-opcodes pad-single-digit) "," (-> operation key pad-single-digit) "!"))
 
 
 (defn parse-command-args

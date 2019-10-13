@@ -42,7 +42,7 @@
 
 
 (defn wrap-auth
-  "Convenience function that wraps a request in middleware for authenticating, then authorizing, and
+  "Convenience function that wraps a request in middleware for authenticating, authorizing, and
   then handling the case where it is unauthorized"
   [handler]
   (-> handler

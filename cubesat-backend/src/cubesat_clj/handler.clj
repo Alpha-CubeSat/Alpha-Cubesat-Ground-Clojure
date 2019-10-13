@@ -75,9 +75,9 @@
       :tags ["Telemetry"]
 
       (POST "/rockblock" []
-        :middleware [telemetry/fix-rockblock-date]
         :return nil
         :summary "Receive data from rockblock web services"
+        :middleware [telemetry/fix-rockblock-date]
         :body [report downlink/RockblockReport]
         (telemetry/handle-report! report)))
 

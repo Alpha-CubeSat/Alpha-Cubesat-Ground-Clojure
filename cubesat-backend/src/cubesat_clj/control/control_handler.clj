@@ -1,4 +1,5 @@
 (ns cubesat-clj.control.control-handler
+  "Handles requests to control the satellite."
   (:require [cubesat-clj.control.control-protocol :as protocol]
             [cubesat-clj.config :as config]
             [ring.util.http-response :as http]))

@@ -1,4 +1,6 @@
 (ns cubesat-clj.control.control-protocol
+  "Format of incoming and outgoing data concerning control, and the message
+  format used by the cubesat for commands."
   (:require [clj-http.client :as http]
             [cubesat-clj.util.binary.hex-string :as bin]
             [schema.core :as s]))

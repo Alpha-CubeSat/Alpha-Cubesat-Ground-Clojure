@@ -3,8 +3,10 @@
     [re-frame.core :as re-frame]
     [re-com.core :as ui]
     [control-frontend.subs :as subs]
-    [control-frontend.commands :as commands]))
+    [control-frontend.commands :as commands]
+    [reagent.core :as reagent]))
 
+;; <editor-fold desc="command palette">
 (defn command-card [{:keys [title]}]
   [ui/button
    :label [ui/title :label title :level :level3]
@@ -20,7 +22,7 @@
 
 (defn command-category [{:keys [title commands]}]
   [ui/v-box
-   :width "230px"
+   :max-width "230px"
    :children [[ui/title
                :label title
                :level :level2]
@@ -32,20 +34,67 @@
                :children (into [] (for [command commands]
                                     (command-card command)))]]])
 
+(defn command-selector []
+  (let [search-filter (re-frame/subscribe [:command-filter])
+        all-commands (commands/get-filtered-commands @search-filter)]
+    [ui/v-box
+     :max-width "270px"
+     :size "1 1 auto"
+     :children [[ui/scroller
+                 :v-scroll :auto
+                 :width "270px"
+                 :style {:background "transparent"}
+                 :child [ui/v-box
+                         :gap "15px"
+                         :align :center
+                         :children (into [] (for [category all-commands]
+                                              (command-category category)))]]]]))
+
+(defn command-search []
+  (let [search-filter (re-frame.core/subscribe [:command-filter])]
+    [ui/input-text
+     :model @search-filter
+     :width "235px"
+     :placeholder "Search..."
+     :style {:margin-left "-7px"
+             :margin-top  "10px"}
+     :on-change #(re-frame/dispatch [:change-command-filter %])]))
 
 (defn command-palette []
-  (let [all-commands commands/all-commands]
-    [ui/scroller
-     :v-scroll :auto
-     :max-width "270px"
-     :child [ui/v-box
-             :width "250px"
-             :gap "15px"
-             :align :center
-             :children (into [] (for [category all-commands]
-                                  (command-category category)))]]))
+  [ui/v-box
+   :align :center
+   :max-width "270px"
+   :size "1 1 auto"
+   :gap "10px"
+   :children [[command-search]
+              [command-selector]]])
+
+(defn command-palette-container []
+  [ui/v-box
+   :max-width "270px"
+   :size "1 1 auto"
+   :style {:background-color "#fcfcfc"}
+   :children [[ui/title
+               :label "Commands"
+               :level :level3
+               :style {:margin-left "5px"
+                       :margin-top  "5px"}]
+              [command-palette]]])
+;; </editor-fold>
+
+(defn top-bar []
+  [ui/h-box
+   :height "50px"
+   :children [[:p "Top bar placeholder"]]])
+
+(defn main-container []
+  [ui/h-box
+   :size "1 1 auto"
+   :children [[command-palette]]])
 
 (defn main-panel []
-  [ui/h-box
+  [ui/v-box
+   :max-height "100vh"
    :height "100vh"
-   :children [[command-palette]]])
+   :children [[top-bar]
+              [command-palette-container]]])

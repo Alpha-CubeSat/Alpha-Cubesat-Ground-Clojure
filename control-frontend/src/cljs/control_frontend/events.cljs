@@ -8,3 +8,8 @@
  ::initialize-db
  (fn [_ _]
    db/default-db))
+
+(re-frame.core/reg-event-fx
+  :change-command-filter
+  (fn [{:keys [db]} [_ new-filter]]
+    {:db (assoc-in db [:commands :filter] new-filter)}))

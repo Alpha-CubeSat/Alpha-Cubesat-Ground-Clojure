@@ -1,4 +1,5 @@
 (ns control-frontend.commands
+  (:require [clojure.string :as str])
   (:require-macros [control-frontend.command-macros :refer [defcommand defcategory]]))
 
 (defcommand change-sr
@@ -37,7 +38,28 @@
   "Mission Control"
   [change-sr request-report request-imu-data])
 
+(defcategory
+  faults
+  ::faults
+  "Faults"
+  [change-sr request-report request-imu-data])
+
 (def ^:const all-commands
   [acs
    battery
-   mission])
+   mission
+   faults])
+
+(defn- filter-category-commands [category filter-str]
+  (let [commands (:commands category)
+        filtered (filter
+                   #(or
+                      (clojure.string/includes? (str/lower-case (:title %)) (str/lower-case filter-str))
+                      (clojure.string/includes? (str/lower-case (:description %)) (str/lower-case filter-str)))
+                   commands)]
+    (assoc category :commands (vec filtered))))
+
+(defn get-filtered-commands [filter]
+  (if (or (nil? filter) (= filter ""))
+    all-commands
+    (map #(filter-category-commands % filter) all-commands)))

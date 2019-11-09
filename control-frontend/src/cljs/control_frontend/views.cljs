@@ -43,9 +43,9 @@
      :children [[ui/scroller
                  :v-scroll :auto
                  :width "270px"
-                 :style {:background "transparent"}
                  :child [ui/v-box
                          :gap "15px"
+                         :style {:padding-bottom "20px"}
                          :align :center
                          :children (into [] (for [category all-commands]
                                               (command-category category)))]]]]))
@@ -82,10 +82,12 @@
               [command-palette]]])
 ;; </editor-fold>
 
+;; <editor-fold desc="top bar">
 (defn top-bar []
   [ui/h-box
    :height "50px"
    :children [[:p "Top bar placeholder"]]])
+;</editor-fold>
 
 (defn main-container []
   [ui/h-box

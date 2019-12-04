@@ -20,7 +20,7 @@
            :font-weight      "500"
            :box-shadow       "3px 3px 2px grey"}])
 
-(defn command-card [{:keys [title]}]
+(defn command-card [{title :title :as command}]
   (let [hovered (reagent/atom {:state false})]
     (fn []
       [ui/label
@@ -29,7 +29,8 @@
                :margin-top       "-1px"
                :background-color (if (:state @hovered) "lightgray" "transparent")}
        :attr {:on-mouse-over #(reset! hovered {:state true})
-              :on-mouse-out  #(reset! hovered {:state false})}])))
+              :on-mouse-out  #(reset! hovered {:state false})
+              :on-click      #(re-frame/dispatch [:change-command-selection command :new-command])}])))
 
 (defn command-category [{:keys [title commands]}]
   [ui/v-box
@@ -92,62 +93,70 @@
 
 ; <editor-fold desc="command viewer">
 ;TODO this is all hardcoded placeholder for now
-(defn command-args []
+
+(defn command-field [{:keys [title field-type backend-key]}]
   [ui/v-box
+   :children [[ui/label
+               :label title
+               :style {:font-size "12px"}]
+              [ui/input-text
+               :model nil
+               :placeholder "placeholder"
+               :on-change #()]]])
+
+(defn command-args [fields]
+  [ui/v-box
+   :size "1 1 auto"
    :children [[ui/title
                :level :level3
                :label "Fields"]
-              [ui/label
-               :label "New Frequency"
-               :style {:font-size "12px"}]
-              [ui/input-text
-               :model nil
-               :placeholder "0 - 99"
-               :on-change #()]
-              [ui/label
-               :label "Some other field"
-               :style {:font-size "12px"}]
-              [ui/input-text
-               :model nil
-               :placeholder "Input"
-               :on-change #()]]])
+              [ui/v-box
+               :children (for [field fields]
+                           [command-field field])]]])
 
-(defn command-description []
+(defn command-description [text]
   [ui/v-box
+   :size "1 1 auto"
    :children [[ui/title
                :level :level3
                :label "Description"]
-              [ui/p "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse condimentum magna id libero dictum, ac sodales mi aliquam. Sed scelerisque a ipsum a efficitur. Vestibulum pharetra est fermentum varius tristique. Mauris et enim dui. In faucibus tellus bibendum, pretium neque sed, vulputate orci. Vivamus scelerisque aliquet sapien, ut eleifend erat laoreet sed. \n"]
-              [ui/p "Nunc placerat libero sem, in porta lacus porta ut. In et tincidunt orci, in molestie mi. Ut eu dictum erat, id scelerisque erat. Proin non aliquet tellus, dignissim dapibus massa. Aenean leo sem, volutpat euismod nibh a, ultricies luctus turpis. Maecenas quis malesuada felis, id ullamcorper ligula. Suspendisse pellentesque diam vel tempus venenatis. Fusce dapibus dolor lectus, et vestibulum turpis gravida nec. "]]])
+              [ui/p text]]])
 
-(defn command-form []
+(defn command-form [{:keys [title description fields]}]
   [ui/v-box
    :children [[ui/title
                :level :level2
-               :label "Change SR"]
+               :label title]
               [ui/line]
               [ui/h-box
-               :gap "15px"
-               :children [[command-description]
-                          [command-args]]]]])
+               :children [[ui/v-box
+                           :gap "15px"
+                           :children [[command-description description]
+                                      [command-args fields]]]
+                          [ui/p "test"]]]]])
 
 (defn command-viewer []
-  :size "1 1 auto"
-  [ui/v-box
-   :size "1 1 auto"
-   :style {:margin-top  "-5px"
-           :margin-left "10px"}
-   :children [[ui/title
-               :level :level3
-               :label "Selection"]
-              [command-form]]])
+  (let [selected-command (re-frame/subscribe [:command-selection])]
+    [ui/border
+     :size "1 1 auto"
+     :border "0px solid gray"
+     :style {:margin     "15px"
+             :box-shadow "2px 2px 5px"}
+     :child [ui/v-box
+             :size "1 1 auto"
+             :style {:margin-top  "-5px"
+                     :margin-left "10px"}
+             :children [[ui/title
+                         :level :level3
+                         :label "Selection"]
+                        [command-form (:command @selected-command)]]]]))
 ; </editor-fold>
 
 ; <editor-fold desc="top bar">
 (defn top-bar []
   [ui/h-box
    :height "50px"
-   :style {:background-color "gray"}
+   :style {:background-color "#2b2c2e"}
    :children [[:p "Top bar placeholder"]]])
 ; </editor-fold>
 

@@ -6,7 +6,8 @@
   "Change SR"
   "Changes the SR frequency to the desired frequency."
   :change-sr
-  [{:title "New Frequency", :field=type :numeric, :backend-key :frequency}])
+  [{:title "New Frequency", :field-type :numeric, :backend-key :frequency}
+   {:title "Some other field", :field-type :numeric, :backend-key :frequency}])
 
 (defcommand request-report
   "Report"

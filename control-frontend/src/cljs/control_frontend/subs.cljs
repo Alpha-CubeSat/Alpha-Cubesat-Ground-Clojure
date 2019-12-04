@@ -12,3 +12,8 @@
   :command-filter
   (fn [db v]
     (-> db :commands :filter)))
+
+(re-frame.core/reg-sub
+  :command-selection
+  (fn [db v]
+    (-> db :commands :selection)))

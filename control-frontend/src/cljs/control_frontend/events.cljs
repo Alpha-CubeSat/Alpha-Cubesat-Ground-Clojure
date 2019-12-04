@@ -12,3 +12,10 @@
   :change-command-filter
   (fn [{:keys [db]} [_ new-filter]]
     {:db (assoc-in db [:commands :filter] new-filter)}))
+
+(re-frame.core/reg-event-fx
+  :change-command-selection
+  (fn [{:keys [db]} [_ new-command selection-type]]
+    {:db (-> db
+             (assoc-in [:commands :selection :command] new-command)
+             (assoc-in [:commands :selection :selection-type] selection-type))}))

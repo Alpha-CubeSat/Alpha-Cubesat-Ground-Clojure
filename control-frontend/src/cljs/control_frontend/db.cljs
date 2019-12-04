@@ -2,4 +2,6 @@
 
 (def default-db
   {:name "re-frame"
-   :commands {:filter ""}})
+   :commands {:filter ""
+              :selection {:selection-type :default-no-selection
+                          :command nil}}})

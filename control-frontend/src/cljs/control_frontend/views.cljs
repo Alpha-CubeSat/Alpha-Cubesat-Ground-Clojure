@@ -100,56 +100,97 @@
                :label title
                :style {:font-size "12px"}]
               [ui/input-text
+               :width "100%"
                :model nil
                :placeholder "placeholder"
                :on-change #()]]])
 
 (defn command-args [fields]
   [ui/v-box
-   :size "1 1 auto"
+   :size "1 0 auto"
    :children [[ui/title
                :level :level3
                :label "Fields"]
               [ui/v-box
+               :gap "5px"
                :children (for [field fields]
                            [command-field field])]]])
 
 (defn command-description [text]
   [ui/v-box
    :size "1 1 auto"
+   :width "470px"
    :children [[ui/title
                :level :level3
                :label "Description"]
-              [ui/p text]]])
+              [ui/scroller
+               :size "1 1 auto"
+               :v-scroll :auto
+               :child [ui/p text]]]])
+
+(defn command-actions []
+  [ui/v-box
+   :gap "10px"
+   :children [[ui/title
+               :level :level3
+               :label "Actions"]
+              [ui/h-box
+               :gap "10px"
+               :align :baseline
+               :children [[ui/label
+                           :label "Run after:"]
+                          [ui/input-time
+                           :model 900
+                           :on-change #()]
+                          [ui/button
+                           :style {:width            "150px"
+                                   :background-color "lightgreen"}
+                           :label "Schedule"]]]
+              [ui/button
+               :style {:width            "100%"
+                       :background-color "lightgreen"}
+               :label "Run"]
+              [ui/button
+               :style {:width            "100%"
+                       :background-color "#d9534f"
+                       :border-color     "#d43f3a"
+                       :color            "lightgray"}
+               :label "Clear"]]])
 
 (defn command-form [{:keys [title description fields]}]
   [ui/v-box
+   :size "1 1 auto"
+   :style {:margin-top -10}
    :children [[ui/title
                :level :level2
                :label title]
               [ui/line]
               [ui/h-box
-               :children [[ui/v-box
+               :size "1 1 auto"
+               :gap "10px"
+               :children [[command-description description]
+                          [ui/v-box
+                           :size "1 1 auto"
                            :gap "15px"
-                           :children [[command-description description]
-                                      [command-args fields]]]
-                          [ui/p "test"]]]]])
+                           :children [[command-args fields]
+                                      [command-actions]]]]]]])
 
 (defn command-viewer []
   (let [selected-command (re-frame/subscribe [:command-selection])]
-    [ui/border
+    [ui/v-box
      :size "1 1 auto"
-     :border "0px solid gray"
-     :style {:margin     "15px"
-             :box-shadow "2px 2px 5px"}
-     :child [ui/v-box
-             :size "1 1 auto"
-             :style {:margin-top  "-5px"
-                     :margin-left "10px"}
-             :children [[ui/title
-                         :level :level3
-                         :label "Selection"]
-                        [command-form (:command @selected-command)]]]]))
+     :style {:margin-top  "-5px"
+             :margin-left "10px"}
+     :children [[ui/title
+                 :level :level3
+                 :label "Selection"]
+                [ui/border
+                 :size "1 1 auto"
+                 :border "0px solid gray"
+                 :style {:margin     "10px"
+                         :padding    "10px"
+                         :box-shadow "2px 2px 5px"}
+                 :child [command-form (:command @selected-command)]]]]))
 ; </editor-fold>
 
 ; <editor-fold desc="top bar">
@@ -162,7 +203,7 @@
 
 (defn center-container []
   [ui/v-box
-   :size "1 1 auto"
+   :size "0 0 auto"
    :children [[command-viewer]
               [command-viewer]]])
 

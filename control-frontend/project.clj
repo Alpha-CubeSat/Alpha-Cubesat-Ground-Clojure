@@ -9,7 +9,8 @@
                  [re-com "2.6.0"]
                  [compojure "1.6.1"]
                  [yogthos/config "1.1.6"]
-                 [ring "1.7.1"]]
+                 [ring "1.7.1"]
+                 [cljs-ajax "0.8.0"]]
 
   :plugins [
             [lein-shell "0.5.0"]]

@@ -4,7 +4,8 @@
     [re-com.core :as ui]
     [control-frontend.subs :as subs]
     [control-frontend.commands :as commands]
-    [reagent.core :as reagent]))
+    [reagent.core :as reagent]
+    [ajax.core :as http]))
 
 ;; <editor-fold desc="command palette">
 (defn command-card-2 [{:keys [title]}]
@@ -81,7 +82,7 @@
 (defn command-palette-container []
   [ui/v-box
    :max-width "200px"
-   :size "1 1 auto"
+   :size "1 0 auto"
    :style {:background-color "#fcfcfc"}
    :children [[ui/title
                :label "Commands"
@@ -103,7 +104,10 @@
                :width "100%"
                :model nil
                :placeholder "placeholder"
-               :on-change #()]]])
+               :on-change #(http/GET
+                             "/debug/ping"
+                             {:handler       (fn [res] (js/console.log (str "response: " res)))
+                              :error-handler (fn [res] (js/console.log (str "error: " res)))})]]])
 
 (defn command-args [fields]
   [ui/v-box
@@ -133,6 +137,7 @@
    :gap "10px"
    :children [[ui/title
                :level :level3
+               :style {:margin-bottom "-5px"}
                :label "Actions"]
               [ui/h-box
                :gap "10px"
@@ -144,17 +149,18 @@
                            :on-change #()]
                           [ui/button
                            :style {:width            "150px"
-                                   :background-color "lightgreen"}
+                                   :background-color "#00C851"
+                                   :color "#f0f0f0"}
                            :label "Schedule"]]]
               [ui/button
                :style {:width            "100%"
-                       :background-color "lightgreen"}
+                       :background-color "#00C851"
+                       :color "#f0f0f0"}
                :label "Run"]
               [ui/button
                :style {:width            "100%"
-                       :background-color "#d9534f"
-                       :border-color     "#d43f3a"
-                       :color            "lightgray"}
+                       :background-color "#ff4444"
+                       :color            "#f0f0f0"}
                :label "Clear"]]])
 
 (defn command-form [{:keys [title description fields]}]
@@ -169,11 +175,14 @@
                :size "1 1 auto"
                :gap "10px"
                :children [[command-description description]
-                          [ui/v-box
+                          [ui/scroller
+                           :v-scroll :auto
                            :size "1 1 auto"
-                           :gap "15px"
-                           :children [[command-args fields]
-                                      [command-actions]]]]]]])
+                           :child [ui/v-box
+                                   :size "1 1 auto"
+                                   :gap "15px"
+                                   :children [[command-args fields]
+                                              [command-actions]]]]]]]])
 
 (defn command-viewer []
   (let [selected-command (re-frame/subscribe [:command-selection])]
@@ -205,7 +214,10 @@
   [ui/v-box
    :size "0 0 auto"
    :children [[command-viewer]
-              [command-viewer]]])
+              [ui/box
+               :height "50%"
+               :size "0 0 auto"
+               :child [ui/p "Command history placeholder"]]]])
 
 (defn main-container []
   [ui/h-box

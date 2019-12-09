@@ -54,7 +54,8 @@
       (GET "/ping" []
         :return s/Str
         :summary "Test the API"
-        (ok "pong"))
+        (do (println "Got a ping")
+            (ok "pong")))
 
       (POST "/echo" []
         :consumes ["text/plain"]

@@ -18,15 +18,12 @@
 
 (s/defschema Command
   "Supported uplink commands. Original names from Alpha docs in comments"
-  {:imei      s/Str
-   :operation (s/conditional
+  {:operation (s/conditional
                 ;; TODO the rest of them
                 (is-type? :report) {:type (s/eq :report)}
-
                 (is-type? :imu) {:type (s/eq :imu)}
-
-                (is-type? :echo) {:type  (s/eq :echo)
-                                  :input s/Str})})
+                (is-type? :echo) {:type   (s/eq :echo)
+                                  :fields {:input s/Str}})})
 
 
 (s/defschema Macro
@@ -45,8 +42,8 @@
 (def ^:const uplink-opcodes
   "Uplink command opcodes by command type"
   {:report 1
-   :imu 4
-   :echo 5})
+   :imu    4
+   :echo   5})
 
 
 (defn- pad-single-digit

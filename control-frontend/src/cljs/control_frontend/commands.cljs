@@ -7,7 +7,7 @@
   "Changes the SR frequency to the desired frequen cy.Changes the SR frequency to the desired frequency.Changes the SR frequency to the desired frequency.Changes the SR frequency to the desired frequency.Changes the SR frequency to the desired frequency.Changes the SR frequency to the desired frequency.Changes the SR frequency to the desired frequency.Changes the SR frequency to the desired frequency.Changes the SR frequency to the desired frequency.Changes the SR frequency to the desired frequency.Changes the SR frequency to the desired frequency.Changes the SR frequency to the desired frequency.Changes the SR frequency to the desired frequency.Changes the SR frequency to the desired frequency.Changes the SR frequency to the desired frequency.Changes the SR frequency to the desired frequency.Changes the SR frequency to the desired frequency.Changes the SR frequency to the desired frequency.Changes the SR frequency to the desired frequency.Changes the SR frequency to the desired frequency.Changes the SR frequency to the desired frequency.Changes the SR frequency to the desired frequency.Changes the SR frequency to the desired frequency.Changes the SR frequency to the desired frequency.Changes the SR frequency to the desired frequency.Changes the SR frequency to the desired frequency.Changes the SR frequency to the desired frequency.Changes the SR frequency to the desired frequency.Changes the SR frequency to the desired frequency.Changes the SR frequency to the desired frequency.Changes the SR frequency to the desired frequency.Changes the SR frequency to the desired frequency.Changes the SR frequency to the desired frequency.Changes the SR frequency to the desired frequency.Changes the SR frequency to the desired frequency.Changes the SR frequency to the desired frequency.Changes the SR frequency to the desired frequency.Changes the SR frequency to the desired frequency.Changes the SR frequency to the desired frequency.Changes the SR frequency to the desired frequency."
   :change-sr
   [{:title "New Frequency", :field-type :numeric, :backend-key :frequency}
-   {:title "Some other field", :field-type :numeric, :backend-key :frequency}])
+   {:title "Some other field", :field-type :numeric, :backend-key :field2}])
 
 (defcommand request-report
   "Report"
@@ -64,3 +64,13 @@
   (if (or (nil? filter) (= filter ""))
     all-commands
     (map #(filter-category-commands % filter) all-commands)))
+
+;;For now we only have one type, which is numeric 1-99. Later, might want to alter this to account for different ones
+(defn get-field-validation [field-type]
+  #"^(|[0-9][0-9]?)$")
+
+(defn get-validation-tooltip [field-type]
+  "0-99")
+
+(defn check-field-nonempty [str-or-nil]
+  (and str-or-nil (not= "" str-or-nil)))

@@ -7,6 +7,7 @@
     [reagent.core :as reagent]
     [ajax.core :as http]))
 
+
 ;; <editor-fold desc="command palette">
 (defn command-card-2 [{:keys [title]}]
   [ui/button
@@ -95,21 +96,29 @@
 ; <editor-fold desc="command viewer">
 ;TODO this is all hardcoded placeholder for now
 
-(defn command-field [{:keys [title field-type backend-key]}]
-  [ui/v-box
-   :children [[ui/label
-               :label title
-               :style {:font-size "12px"}]
-              [ui/input-text
-               :width "100%"
-               :model nil
-               :placeholder "placeholder"
-               :on-change #(http/GET
-                             "/debug/ping"
-                             {:handler       (fn [res] (js/console.log (str "response: " res)))
-                              :error-handler (fn [res] (js/console.log (str "error: " res)))})]]])
+(defn command-field [{:keys [title field-type backend-key]} responses]
+  (let [input (reagent/atom nil)
+        status (reagent/atom :error)]
+    (fn []
+      [ui/v-box
+       :children [[ui/label
+                   :label title
+                   :style {:font-size "12px"}]
+                  [ui/input-text
+                   :width "100%"
+                   :model input
+                   :placeholder (commands/get-validation-tooltip field-type)
+                   :change-on-blur? false
+                   :status-icon? true
+                   :status @status
+                   :status-tooltip "Field is mandatory"
+                   :validation-regex (commands/get-field-validation field-type)
+                   :on-change (fn [value]
+                                (swap! responses assoc backend-key value)
+                                (reset! status (if (commands/check-field-nonempty value) :success :error))
+                                (reset! input value))]]])))
 
-(defn command-args [fields]
+(defn command-args [fields responses]
   [ui/v-box
    :size "1 0 auto"
    :children [[ui/title
@@ -118,7 +127,7 @@
               [ui/v-box
                :gap "5px"
                :children (for [field fields]
-                           [command-field field])]]])
+                           [command-field field responses])]]])
 
 (defn command-description [text]
   [ui/v-box
@@ -132,7 +141,7 @@
                :v-scroll :auto
                :child [ui/p text]]]])
 
-(defn command-actions []
+(defn command-actions [responses comm-type]
   [ui/v-box
    :gap "10px"
    :children [[ui/title
@@ -150,42 +159,45 @@
                           [ui/button
                            :style {:width            "150px"
                                    :background-color "#00C851"
-                                   :color "#f0f0f0"}
+                                   :color            "#f0f0f0"}
                            :label "Schedule"]]]
               [ui/button
                :style {:width            "100%"
                        :background-color "#00C851"
-                       :color "#f0f0f0"}
-               :label "Run"]
+                       :color            "#f0f0f0"}
+               :label "Submit"
+               :on-click #(re-frame/dispatch [:submit-command comm-type @responses])]
               [ui/button
                :style {:width            "100%"
                        :background-color "#ff4444"
                        :color            "#f0f0f0"}
                :label "Clear"]]])
 
-(defn command-form [{:keys [title description fields]}]
-  [ui/v-box
-   :size "1 1 auto"
-   :style {:margin-top -10}
-   :children [[ui/title
-               :level :level2
-               :label title]
-              [ui/line]
-              [ui/h-box
-               :size "1 1 auto"
-               :gap "10px"
-               :children [[command-description description]
-                          [ui/scroller
-                           :v-scroll :auto
-                           :size "1 1 auto"
-                           :child [ui/v-box
-                                   :size "1 1 auto"
-                                   :gap "15px"
-                                   :children [[command-args fields]
-                                              [command-actions]]]]]]]])
+(defn command-form [{:keys [title description fields backend-type]}]
+  (let [responses (atom {})]
+    [ui/v-box
+     :size "1 1 auto"
+     :style {:margin-top -10}
+     :children [[ui/title
+                 :level :level2
+                 :label title]
+                [ui/line]
+                [ui/h-box
+                 :size "1 1 auto"
+                 :gap "10px"
+                 :children [[command-description description]
+                            [ui/scroller
+                             :v-scroll :auto
+                             :size "1 1 auto"
+                             :child [ui/v-box
+                                     :size "1 1 auto"
+                                     :gap "15px"
+                                     :children [[command-args fields responses]
+                                                [command-actions responses backend-type]]]]]]]]))
 
 (defn command-viewer []
-  (let [selected-command (re-frame/subscribe [:command-selection])]
+  (let [selected-command (re-frame/subscribe [:command-selection])
+        comm (:command @selected-command)]
     [ui/v-box
      :size "1 1 auto"
      :style {:margin-top  "-5px"
@@ -193,13 +205,14 @@
      :children [[ui/title
                  :level :level3
                  :label "Selection"]
-                [ui/border
-                 :size "1 1 auto"
-                 :border "0px solid gray"
-                 :style {:margin     "10px"
-                         :padding    "10px"
-                         :box-shadow "2px 2px 5px"}
-                 :child [command-form (:command @selected-command)]]]]))
+                (if comm [ui/border
+                          :size "1 1 auto"
+                          :border "0px solid gray"
+                          :style {:margin     "10px"
+                                  :padding    "10px"
+                                  :box-shadow "2px 2px 5px"}
+                          :child [command-form comm]]
+                         [ui/p "No Selection"])]]))
 ; </editor-fold>
 
 ; <editor-fold desc="top bar">

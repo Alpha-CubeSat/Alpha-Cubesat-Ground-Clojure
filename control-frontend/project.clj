@@ -10,7 +10,8 @@
                  [compojure "1.6.1"]
                  [yogthos/config "1.1.6"]
                  [ring "1.7.1"]
-                 [cljs-ajax "0.8.0"]]
+                 [cljs-ajax "0.8.0"]
+                 [day8.re-frame/http-fx "v0.2.0"]]
 
   :plugins [
             [lein-shell "0.5.0"]]

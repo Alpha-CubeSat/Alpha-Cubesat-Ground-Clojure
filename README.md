@@ -1,4 +1,5 @@
 # Alpha-Cubesat-Ground
+Ground Station software for the AlphaCubesat project
 
 ## Overview
 This is the Ground Station software for the AlphaCubesat project. It is a full-stack application with code for frontend UI and backend.

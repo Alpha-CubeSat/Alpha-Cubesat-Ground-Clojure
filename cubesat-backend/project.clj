@@ -1,5 +1,5 @@
  (defproject cubesat-clj "0.1.0-SNAPSHOT"
-   :description "FIXME: write description"
+   :description "Backend Ground Station software for the AlphaCubesat project"
    :dependencies [[org.clojure/clojure "1.10.0"]
                   [metosin/compojure-api "2.0.0-alpha30"]
                   [org.clojure/core.match "0.3.0"]

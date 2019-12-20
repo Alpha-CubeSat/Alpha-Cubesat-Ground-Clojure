@@ -1,4 +1,5 @@
-{:telemetry {:elasticsearch-indices {:rockblock "rockblock-data"
+{:docs {:enabled? true}
+ :telemetry {:elasticsearch-indices {:rockblock "rockblock-data"
                                      :cubesat   "cubesat-data"}}
 
  :database  {:elasticsearch {:host        "http://localhost"

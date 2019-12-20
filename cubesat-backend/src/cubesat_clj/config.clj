@@ -10,7 +10,9 @@
 (s/defschema AlphaConfig
   "Format for configuration; includes 'sub-configurations'
   for all modules such as telemetry and databases"
-  {:telemetry {:elasticsearch-indices {:rockblock s/Str
+  {:docs {:enabled? s/Bool
+          (s/optional-key :base-path) s/Str}
+   :telemetry {:elasticsearch-indices {:rockblock s/Str
                                        :cubesat   s/Str}}
    :database  {:elasticsearch {:host        s/Str
                                :port        s/Int

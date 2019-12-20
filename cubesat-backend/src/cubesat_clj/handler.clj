@@ -14,12 +14,13 @@
             [cubesat-clj.control.control-protocol :as uplink]
             [cubesat-clj.control.control-handler :as control]
             [cubesat-clj.auth.auth-handler :as auth]
-            [cubesat-clj.auth.auth-protocol :as auth-data])
+            [cubesat-clj.auth.auth-protocol :as auth-data]
+            [cubesat-clj.config :as cfg])
   (:import (java.io File InputStreamReader ByteArrayInputStream InputStream)
            (java.nio.charset Charset)))
 
 
-(defn log-error
+(defn- log-error
   "Since rockblock sends weird requests, and then doesn't tell you the responses it gets,
   we override compojure-api's error handling to log everything"
   [f type]
@@ -31,6 +32,23 @@
         (println "REQUEST: " request)
         (f {:message (.getMessage e), :type type}))))
 
+(defn- make-docs []
+  "If configured to do so, returns a map containing swagger UI spec"
+  (let [doc-config (-> (cfg/get-config) :docs)
+        enabled (:enabled? doc-config)
+        p-base-path (:base-path doc-config)
+        base (if p-base-path p-base-path "/")]
+    (if (not enabled)
+      {}
+      {:ui   "/"
+       :spec "/swagger.json"
+       :data {:basePath base
+              :info {:title       "Cubesat Ground"
+                     :description "Alpha Cubesat Ground System"}
+              :tags [{:name "Debug", :description "Miscellaneous requests for debugging/sanity checks"}
+                     {:name "Auth", :description "Login endpoint"}
+                     {:name "API", :description "Satellite control/data API"}
+                     {:name "Telemetry", :description "Rockblock web services telemetry endpoint"}]}})))
 
 (def app
   (api
@@ -39,14 +57,7 @@
                    ::ex/request-validation  (log-error response/internal-server-error :unknown)
                    ::ex/response-validation (log-error response/internal-server-error :unknown)
                    ::ex/default             (log-error response/internal-server-error :unknown)}}
-     :swagger    {:ui   "/"
-                  :spec "/swagger.json"
-                  :data {:info {:title       "Cubesat Ground"
-                                :description "Alpha Cubesat Ground System"}
-                         :tags [{:name "Debug", :description "Miscellaneous requests for debugging/sanity checks"}
-                                {:name "Auth", :description "Login endpoint"}
-                                {:name "API", :description "Satellite control/data API"}
-                                {:name "Telemetry", :description "Rockblock web services telemetry endpoint"}]}}}
+     :swagger    (make-docs)}
 
     (context "/debug" []
       :tags ["Debug"]

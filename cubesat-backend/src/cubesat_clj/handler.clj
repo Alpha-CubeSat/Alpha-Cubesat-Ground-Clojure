@@ -59,58 +59,60 @@
                    ::ex/default             (log-error response/internal-server-error :unknown)}}
      :swagger    (make-docs)}
 
-    (context "/debug" []
-      :tags ["Debug"]
-
-      (GET "/ping" []
-        :return s/Str
-        :summary "Test the API"
-        (do (println "Got a ping")
-            (ok "pong")))
-
-      (POST "/echo" []
-        :consumes ["text/plain"]
-        :body [body s/Str]
-        (do (println "Echo: " body)
-            (ok body))))
-
-    (context "/auth" []
-      :tags ["Auth"]
-
-      (POST "/login" []
-        :return {:token s/Str}
-        :summary "Authenticate to get a token for api access"
-        :body [credentials auth-data/LoginRequest]
-        (auth/handle-login credentials)))
-
-    (context "/telemetry" []
-      :tags ["Telemetry"]
-
-      (POST "/rockblock" []
-        :return nil
-        :summary "Receive data from rockblock web services"
-        :middleware [telemetry/fix-rockblock-date]
-        :body [report downlink/RockblockReport]
-        (telemetry/handle-report! report)))
-
     (context "/api" []
-      :tags ["API"]
 
-      (GET "/img/recent" []
-        :summary "Returns the most recent ttl data fully received by ground"
-        :return File
-        :middleware [auth/wrap-auth]
-        :header-params [authorization :- s/Str]
-        :produces ["image/jpeg"]
-        (-> (img/get-most-recent)
-            (io/input-stream)
-            (ok)
-            (header "Content-Type" "image/jpeg")))
+      (context "/debug" []
+        :tags ["Debug"]
 
-      (POST "/control" []
-        :return {:response s/Str}
-        :summary "Process a command to be sent to cubesat."
-        :middleware [auth/wrap-auth]
-        :header-params [authorization :- s/Str]
-        :body [command uplink/Command]
-        (control/handle-command! command)))))
+        (GET "/ping" []
+          :return s/Str
+          :summary "Test the API"
+          (do (println "Got a ping")
+              (ok "pong")))
+
+        (POST "/echo" []
+          :consumes ["text/plain"]
+          :body [body s/Str]
+          (do (println "Echo: " body)
+              (ok body))))
+
+      (context "/auth" []
+        :tags ["Auth"]
+
+        (POST "/login" []
+          :return {:token s/Str}
+          :summary "Authenticate to get a token for api access"
+          :body [credentials auth-data/LoginRequest]
+          (auth/handle-login credentials)))
+
+      (context "/rockblock" []
+        :tags ["RockBlock"]
+
+        (POST "/telemetry" []
+          :return nil
+          :summary "Receive data from rockblock web services"
+          :middleware [telemetry/fix-rockblock-date]
+          :body [report downlink/RockblockReport]
+          (telemetry/handle-report! report)))
+
+      (context "/cubesat" []
+        :tags ["Cubesat"]
+
+        (GET "/img/recent" []
+          :summary "Returns the most recent ttl data fully received by ground"
+          :return File
+          :middleware [auth/wrap-auth]
+          :header-params [authorization :- s/Str]
+          :produces ["image/jpeg"]
+          (-> (img/get-most-recent)
+              (io/input-stream)
+              (ok)
+              (header "Content-Type" "image/jpeg")))
+
+        (POST "/control" []
+          :return {:response s/Str}
+          :summary "Process a command to be sent to cubesat."
+          :middleware [auth/wrap-auth]
+          :header-params [authorization :- s/Str]
+          :body [command uplink/Command]
+          (control/handle-command! command))))))

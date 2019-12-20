@@ -26,7 +26,7 @@
   :submit-command
   (fn [_ [_ type fields]]
     {:http-xhrio {:method :post
-                  :uri "/api/control"
+                  :uri "/api/cubesat/control"
                   :params {:operation {:type type
                                        :fields fields}}
                   :format (http/json-request-format)

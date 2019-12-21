@@ -9,7 +9,6 @@
             [cubesat-clj.databases.image-database :as img]
             [schema.core :as s]
             [clojure.java.io :as io]
-            [muuntaja.core :as m]
             [ring.util.http-response :as response]
             [cubesat-clj.control.control-protocol :as uplink]
             [cubesat-clj.control.control-handler :as control]
@@ -40,8 +39,8 @@
         base (if p-base-path p-base-path "/")]
     (if (not enabled)
       {}
-      {:ui   "/"
-       :spec "/swagger.json"
+      {:ui   "/api"
+       :spec "/api/swagger.json"
        :data {:basePath base
               :info {:title       "Cubesat Ground"
                      :description "Alpha Cubesat Ground System"}

@@ -32,7 +32,8 @@
                             ["run" "-m" "shadow.cljs.devtools.cli" "watch" "app"]]
             "prod"         ["with-profile" "prod" "do"
                             ["clean"]
-                            ["run" "-m" "shadow.cljs.devtools.cli" "release" "app"]]
+                            ["run" "-m" "shadow.cljs.devtools.cli" "release" "app"]
+                            ["uberjar"]]
             "build-report" ["with-profile" "prod" "do"
                             ["clean"]
                             ["run" "-m" "shadow.cljs.devtools.cli" "run" "shadow.cljs.build-report" "app" "target/build-report.html"]
@@ -43,15 +44,10 @@
                             ["shell" "karma" "start" "--single-run" "--reporters" "junit,dots"]]}
 
   :profiles
-  {:dev
-   {:dependencies [[binaryage/devtools "0.9.10"]]}
+  {:dev {:dependencies [[binaryage/devtools "0.9.10"]]}
 
-   :prod { }
-
-   :uberjar {:source-paths ["env/prod/clj"]
-             :omit-source  true
-             :main         control-frontend.server
-             :aot          [control-frontend.server]
-             :uberjar-name "control-frontend.jar"
-             :prep-tasks   ["compile" ["prod"]]}
+   :prod {:uberjar-name "cubesat-control.jar"
+          :aot :all
+          :main control-frontend.core
+          :auto-clean false}
    })

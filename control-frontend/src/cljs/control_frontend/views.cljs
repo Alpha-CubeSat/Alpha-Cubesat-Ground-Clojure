@@ -230,7 +230,7 @@
               [ui/box
                :height "50%"
                :size "0 0 auto"
-               :child [ui/p "Command history placeholder"]]]])
+               :child [ui/p "Command history placeholder TODO"]]]])
 
 (defn main-container []
   [ui/h-box

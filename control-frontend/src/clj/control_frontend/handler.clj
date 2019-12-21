@@ -4,7 +4,8 @@
     [compojure.route :refer [resources]]
     [ring.util.response :refer [resource-response]]
     [ring.middleware.reload :refer [wrap-reload]]
-    [shadow.http.push-state :as push-state]))
+    [shadow.http.push-state :as push-state])
+  (:gen-class))
 
 (defroutes routes
   (GET "/" [] (resource-response "index.html" {:root "public"}))

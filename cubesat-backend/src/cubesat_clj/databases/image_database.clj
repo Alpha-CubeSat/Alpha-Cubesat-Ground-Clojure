@@ -8,7 +8,8 @@
 (defn- get-root-path
   "Gets the root directory of the image database as given in the config file"
   []
-  (-> (cfg/get-config) :database :image :root))
+  (-> (cfg/get-config)
+      (cfg/image-root-dir)))
 
 
 (defn save-fragment

@@ -90,6 +90,7 @@
     :echo (parse-single-arg operation :input)))
 
 
+;TODO parse the RB response code according to their documentation
 (defn send-uplink
   "Sends an uplink request to the satellite via the
   Rockblock API. Requires rockblock user, password, and

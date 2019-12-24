@@ -27,7 +27,7 @@
   "Atom that stores the config data"
   (atom nil))
 
-(defn load-config!
+(defn- load-config!
   "Loads a config from telemetry-config-file, and uses Schema to validate it."
   []
   (->> config-file
@@ -41,3 +41,61 @@
   (if @config
     @config
     (do (load-config!) @config)))
+
+
+(defn docs-enabled?
+  "Returns whether API documentation generation/hosting is enabled."
+  [config]
+  (get-in config [:docs :enabled]))
+
+
+(defn docs-base-path
+  "Returns configured base path for documentation location. If not set, returns the default route of \"/\"."
+  [config]
+  (if-let [path (get-in config [:docs :base-path])]
+    path
+    "/"))
+
+
+(defn rockblock-db-index
+  "Returns the configured ElasticSearch index base name for RockBlock data."
+  [config]
+  (get-in config [:telemetry :elasticsearch-indices :rockblock]))
+
+
+(defn cubesat-db-index
+  "Returns the configured ElasticSearch index base name for Cubesat data."
+  [config]
+  (get-in config [:telemetry :elasticsearch-indices :cubesat]))
+
+
+(defn elasticsearch-endpoint
+  "Returns ElasticSearch connection information."
+  [config]
+  (let [es-conf (get-in config [:database :elastisearch])
+        {:keys [host port] :as endpoint} es-conf]
+    endpoint))
+
+
+(defn elasticsearch-config
+  "Returns the ElasticSearch connection configuration."
+  [config]
+  (get-in config [:database :elasticsearch :conn-config]))
+
+
+(defn image-root-dir
+  "Returns root directory path for local image store."
+  [config]
+  (get-in config [:database :image :root]))
+
+
+(defn rockblock-imei
+  "Returns the imei of the RockBlock."
+  [config]
+  (get-in config [:control :rockblock :imei]))
+
+
+(defn rockblock-credentials
+  "Returns credentials for RockBlock account."
+  [config]
+  (get-in config [:contorl :rockblock :basic-auth]))

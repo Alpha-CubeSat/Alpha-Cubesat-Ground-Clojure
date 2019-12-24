@@ -5,14 +5,7 @@
             [cubesat-clj.databases.elasticsearch :as es]
             [cubesat-clj.config :as cfg]
             [cubesat-clj.telemetry.telemetry-protocol :as protocol]
-            [cubesat-clj.databases.image-database :as img])
-  (:import [java.nio ByteBuffer]))
-
-
-(defn- db-indices
-  "Gets the elasticsearch indices from the telemetry configuration"
-  []
-  (-> (cfg/get-config) :telemetry :elasticsearch-indices))
+            [cubesat-clj.databases.image-database :as img]))
 
 
 (defn- save-rockblock-report
@@ -22,14 +15,16 @@
   (let [lat (:iridium_latitude data)
         lon (:iridium_longitude data)
         location {:lat lat, :lon lon}
-        result (assoc data :location location)]
-    (es/index! (:rockblock (db-indices)) es/daily-index-strategy result)))
+        result (assoc data :location location)
+        index (cfg/rockblock-db-index (cfg/get-config))]
+    (es/index! index es/daily-index-strategy result)))
 
 
 (defn- save-cubesat-data
   "Saves a cubesat report to elasticsearch"
   [data]
-  (es/index! (:cubesat (db-indices)) es/daily-index-strategy data))
+  (let [index (cfg/cubesat-db-index (cfg/get-config))]
+    (es/index! index es/daily-index-strategy data)))
 
 
 (defn- handle-bad-data
@@ -68,6 +63,7 @@
     (save-cubesat-data report)))
 
 
+
 (defn- handle-cubesat-data
   "Handles a packet from the cubesat as per the Alpha specification. Reads an opcode,
   and depending on the result, parses and stores the corresponding data"
@@ -81,6 +77,7 @@
          (catch Exception e (handle-bad-data rockblock-report packet (.getMessage e))))))
 
 
+;; TODO Verifying the JWT and replacing original request with its contents should really be taken care of by middleware
 (defn handle-report!
   "Handles a report sent by the rockblock web service API.
   Does not use data sent in report, but instead that which is decoded from

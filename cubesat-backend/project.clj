@@ -6,7 +6,8 @@
                  [clojurewerkz/elastisch "3.0.1"]
                  [aero "1.1.3"]
                  [buddy/buddy-auth "2.2.0"]
-                 [clj-http "3.10.0"]]
+                 [clj-http "3.10.0"]
+                 [buddy/buddy-hashers "1.4.0"]]
   :ring {:handler cubesat-clj.handler/app}
   :uberjar-name "cubesat.jar"
   :aot :all

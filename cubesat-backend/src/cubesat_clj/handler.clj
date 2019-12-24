@@ -33,10 +33,9 @@
 
 (defn- make-docs []
   "If configured to do so, returns a map containing swagger UI spec"
-  (let [doc-config (-> (cfg/get-config) :docs)
-        enabled (:enabled? doc-config)
-        p-base-path (:base-path doc-config)
-        base (if p-base-path p-base-path "/")]
+  (let [config (cfg/get-config)
+        enabled (cfg/docs-enabled? config)
+        base (cfg/docs-base-path config)]
     (if (not enabled)
       {}
       {:ui   "/api"

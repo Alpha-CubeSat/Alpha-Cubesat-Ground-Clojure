@@ -11,6 +11,8 @@
   provided in the config file"
   [command]
   (let [str-cmd (protocol/parse-command-args command)
-        {[user pass] :basic-auth imei :imei} (-> (config/get-config) :control :rockblock)]
+        config (config/get-config)
+        [user pass] (config/rockblock-credentials config)
+        imei (config/rockblock-imei config)]
     (protocol/send-uplink imei user pass str-cmd)
     (http/ok {:response "command sent?"})))

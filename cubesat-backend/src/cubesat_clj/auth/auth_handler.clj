@@ -5,12 +5,11 @@
             [buddy.auth.backends :as backends]
             [buddy.auth :as buddy]
             [buddy.auth.middleware :refer [wrap-authentication wrap-authorization]]
+            [buddy.hashers :as hashers]
             [ring.util.http-response :as http]))
 
 
 (def secret "test_secret")                                  ; TODO make configurable
-
-
 (def backend (backends/jws {:secret secret}))
 
 

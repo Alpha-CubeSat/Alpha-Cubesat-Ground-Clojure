@@ -1,7 +1,8 @@
 {:docs {:enabled? true}
+ :auth      {:jws-secret "example_secret"
+             :users-file "users-example.edn"}
  :telemetry {:elasticsearch-indices {:rockblock "rockblock-data"
                                      :cubesat   "cubesat-data"}}
-
  :database  {:elasticsearch {:host        "http://localhost"
                              :port        9200
                              :conn-config {:content-type :json

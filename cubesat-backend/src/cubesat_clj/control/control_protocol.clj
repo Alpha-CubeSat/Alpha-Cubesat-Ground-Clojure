@@ -16,6 +16,8 @@
     (= (:type operation) type)))
 
 
+;; TODO Support JSON. Having keyword values does not play nice with JSON, need to use strings in spec
+;; and convert to keywords later
 (s/defschema Command
   "Supported uplink commands. Original names from Alpha docs in comments"
   {:operation (s/conditional

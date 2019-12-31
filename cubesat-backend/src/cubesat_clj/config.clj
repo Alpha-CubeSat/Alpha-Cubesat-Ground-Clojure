@@ -10,8 +10,10 @@
 (s/defschema AlphaConfig
   "Format for configuration; includes 'sub-configurations'
   for all modules such as telemetry and databases"
-  {:docs {:enabled? s/Bool
-          (s/optional-key :base-path) s/Str}
+  {:docs      {:enabled?                   s/Bool
+               (s/optional-key :base-path) s/Str}
+   :auth      {:jws-secret s/Str
+               :users-file s/Str}
    :telemetry {:elasticsearch-indices {:rockblock s/Str
                                        :cubesat   s/Str}}
    :database  {:elasticsearch {:host        s/Str
@@ -20,8 +22,8 @@
                                              (s/optional-key :conn-timeout) s/Int ; timeout in millis
                                              :content-type                  (s/enum :json)}} ; Elastich requires json but doesnt use it by default
                :image         {:root s/Str}}
-   :control {:rockblock {:imei s/Str
-                         :basic-auth [s/Str]}}}) ; ["user" "pass"]
+   :control   {:rockblock {:imei       s/Str
+                           :basic-auth [s/Str]}}})          ; ["user" "pass"]
 
 (def config
   "Atom that stores the config data"
@@ -46,7 +48,7 @@
 (defn docs-enabled?
   "Returns whether API documentation generation/hosting is enabled."
   [config]
-  (get-in config [:docs :enabled]))
+  (get-in config [:docs :enabled?]))
 
 
 (defn docs-base-path
@@ -99,3 +101,15 @@
   "Returns credentials for RockBlock account."
   [config]
   (get-in config [:contorl :rockblock :basic-auth]))
+
+
+(defn jws-secret
+  "Returns secret for jws tokens."
+  [config]
+  (get-in config [:auth :jws-secret]))
+
+
+(defn users-file
+  "Returns name of file containing users."
+  [config]
+  (get-in config :auth :users-file))

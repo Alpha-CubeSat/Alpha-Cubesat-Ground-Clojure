@@ -1,32 +1,19 @@
 (ns cubesat-clj.auth.auth-handler
   "Handles requests related to or using security."
-  (:require [cheshire.core :as json]
-            [buddy.sign.jwt :as jwt]
-            [buddy.auth.backends :as backends]
-            [buddy.auth :as buddy]
+  (:require [buddy.auth :as buddy]
             [buddy.auth.middleware :refer [wrap-authentication wrap-authorization]]
-            [buddy.hashers :as hashers]
-            [ring.util.http-response :as http]))
-
-
-(def secret "test_secret")                                  ; TODO make configurable
-(def backend (backends/jws {:secret secret}))
-
-
-(defn find-user
-  "Finds a user with username and correct password. TODO: For now, just authenticates everything." ; TODO make configurable
-  [username password]
-  {:id username})
+            [ring.util.http-response :as http]
+            [cubesat-clj.auth.auth-protocol :as auth]))
 
 
 (defn handle-login
   "Handles a login request by checking the provided credentials. Returns a signed JWT token if successful." ; TODO fail if user could not be found
   [credentials]
-  (let [user (find-user (:username credentials)
-                        (:password credentials))
-        token (jwt/sign {:user (:id user)} secret)]
-    (println "SIGNED: " (json/encode {:token token}))
-    (http/ok {:token token})))
+  (let [{:keys [username password]} credentials
+        token (auth/authenticate-user username password)]
+    (if token
+      (http/ok {:token token})
+      (http/bad-request {:error "Invalid user or incorrect password"}))))
 
 
 ; TODO use the more idiomatic "wrap-restricted" feature in buddy once needed
@@ -46,5 +33,5 @@
   [handler]
   (-> handler
       (wrap-check-auth)
-      (wrap-authorization backend)
-      (wrap-authentication backend)))
+      (wrap-authorization auth/auth-backend)
+      (wrap-authentication auth/auth-backend)))

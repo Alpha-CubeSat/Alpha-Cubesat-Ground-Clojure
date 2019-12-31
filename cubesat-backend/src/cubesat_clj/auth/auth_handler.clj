@@ -10,7 +10,7 @@
   "Handles a login request by checking the provided credentials. Returns a signed JWT token if successful." ; TODO fail if user could not be found
   [credentials]
   (let [{:keys [username password]} credentials
-        token (auth/authenticate-user username password)]
+        token (auth/try-authenticate-user username password)]
     (if token
       (http/ok {:token token})
       (http/bad-request {:error "Invalid user or incorrect password"}))))

@@ -1,6 +1,6 @@
 {:docs {:enabled? true}
  :auth      {:jws-secret "example_secret"
-             :users-file "users-example.edn"}
+             :users-file "users-example.edn"}               ; Password for the example user is "example"
  :telemetry {:elasticsearch-indices {:rockblock "rockblock-data"
                                      :cubesat   "cubesat-data"}}
  :database  {:elasticsearch {:host        "http://localhost"

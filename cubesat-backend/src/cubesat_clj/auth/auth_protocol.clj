@@ -3,6 +3,7 @@
   (:require [schema.core :as s]
             [buddy.auth.backends :as backends]
             [cubesat-clj.config :as cfg]
+            [cubesat-clj.auth.user-store :as usr]
             [buddy.sign.jwt :as jwt]))
 
 
@@ -19,12 +20,12 @@
     (backends/jws {:secret secret})))
 
 
-;;TODO actually check the password
-(defn authenticate-user
-  "Takes as input user credentials, and returns a token if authencated. Returns nil on failure,
+(defn try-authenticate-user
+  "Takes as input user credentials, and returns a token if authenticated. Returns nil on failure,
   such as non-existent user or incorrect password."
   [user pass]
-  (let [config (cfg/get-config)
-        secret (cfg/jws-secret config)
-        token (jwt/sign {:user user} secret)]
-    token))
+  (if (usr/check-credentials user pass)
+    (let [config (cfg/get-config)
+          secret (cfg/jws-secret config)]
+      (jwt/sign {:user user} secret))
+    nil))

@@ -112,4 +112,4 @@
 (defn users-file
   "Returns name of file containing users."
   [config]
-  (get-in config :auth :users-file))
+  (get-in config [:auth :users-file]))

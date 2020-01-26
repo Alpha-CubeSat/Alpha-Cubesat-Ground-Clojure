@@ -45,3 +45,27 @@
   (fn [_ _]
     (js/console.log "command submission failed")
     nil))
+
+(re-frame/reg-event-fx
+  :login-submitted
+  (fn [_ [_ username password]]
+    {:http-xhrio {:method :post
+                  :uri "/api/auth/login"
+                  :params {:username username
+                           :password password}
+                  :format (http/json-request-format)
+                  :response-format (http/json-response-format {:keywords? true})
+                  :on-success [:login-success]
+                  :on-failure [:login-failure]}}))
+
+(re-frame/reg-event-fx
+  :login-success
+  (fn [{:keys [db]} [_ {token :token}]]
+    (js/console.log (str token " authenticated successfully"))
+    {:db (assoc-in db [:control-auth :token] token)}))
+
+(re-frame/reg-event-fx
+  :login-failure
+  (fn [_ _]
+    (js/console.log "authentication failed")
+    nil))

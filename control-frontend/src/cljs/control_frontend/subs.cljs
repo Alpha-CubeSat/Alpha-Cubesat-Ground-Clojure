@@ -17,3 +17,8 @@
   :command-selection
   (fn [db v]
     (-> db :commands :selection)))
+
+(re-frame.core/reg-sub
+  :auth-token
+  (fn [db v]
+    (-> db :control-auth :token)))

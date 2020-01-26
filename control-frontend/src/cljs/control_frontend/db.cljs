@@ -2,6 +2,7 @@
 
 (def default-db
   {:name "re-frame"
+   :control-auth {:token nil}
    :commands {:filter ""
               :selection {:selection-type :default-no-selection
                           :command nil}}})

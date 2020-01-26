@@ -94,7 +94,6 @@
 ;; </editor-fold>
 
 ; <editor-fold desc="command viewer">
-;TODO this is all hardcoded placeholder for now
 
 (defn command-field [{:keys [title field-type backend-key]} responses]
   (let [input (reagent/atom nil)
@@ -223,6 +222,63 @@
    :children [[:p "Top bar placeholder"]]])
 ; </editor-fold>
 
+; <editor-fold desc="login popup">
+(defn login-panel []
+  (let [response (reagent/atom nil)]
+    (fn []
+      [ui/modal-panel
+       :backdrop-color "grey"
+       :backdrop-opacity 0.7
+       :style {:font-family "Consolas"}
+       :child [ui/v-box
+               :gap "13px"
+               :children [[ui/title
+                           :level :level2
+                           :label "Authentication"
+                           :style {:margin "0"}]
+                          [ui/title
+                           :level :level4
+                           :label "Cubesat control services require authentication with the ground system. Please sign in."
+                           :style {:max-width "250px"
+                                   :margin-top "-7px"}]
+                          [ui/line]
+                          [ui/p
+                           {:style {:margin-bottom "-22px"
+                                    :width         "250px"
+                                    :min-width     "250px"}}
+                           "Username"]
+                          [ui/input-text
+                           :model (:username @response)
+                           :change-on-blur? false
+                           :placeholder "Enter Username"
+                           :width "100%"
+                           :on-change #(swap! response assoc :username %)]
+                          [ui/p
+                           {:style {:margin-bottom "-22px"
+                                    :width         "250px"
+                                    :min-width     "250px"}}
+                           "Password"]
+                          [ui/input-text
+                           :model (:password @response)
+                           :change-on-blur? false
+                           :placeholder "Enter Password"
+                           :width "100%"
+                           :attr {:id "pf-password" :type "password"}
+                           :on-change #(swap! response assoc :password %)]
+                          [ui/line]
+                          [ui/button
+                           :label "Sign in"
+                           :disabled? (not
+                                        (and
+                                          (commands/check-field-nonempty (:username @response))
+                                          (commands/check-field-nonempty (:password @response))))
+                           :on-click #(re-frame/dispatch [:login-submitted (:username @response) (:password @response)])
+                           :style {:align-self "flex-end"
+                                   :color "#fff"
+                                   :background-color "#337ab7"
+                                   :border-color "#2e6da4"}]]]])))
+;</editor-fold>
+
 (defn center-container []
   [ui/v-box
    :size "0 1 auto"
@@ -239,8 +295,11 @@
               [center-container]]])
 
 (defn main-panel []
-  [ui/v-box
-   :max-height "100vh"
-   :height "100vh"
-   :children [[top-bar]
-              [main-container]]])
+  (let [authentication (re-frame/subscribe [:auth-token])]
+    [ui/v-box
+     :max-height "100vh"
+     :height "100vh"
+     :children [[top-bar]
+                [main-container]
+                (when-not @authentication
+                  [login-panel])]]))

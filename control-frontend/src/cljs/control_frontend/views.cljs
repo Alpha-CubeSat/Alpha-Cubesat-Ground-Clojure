@@ -45,7 +45,7 @@
                :style {:margin-top  "5px"
                        :user-select "none"}
                :children (for [command commands]
-                           [command-card command])]]])
+                           ^{:key command} [command-card command])]]])
 
 (defn command-selector []
   (let [search-filter (re-frame/subscribe [:command-filter])
@@ -58,10 +58,10 @@
                          :gap "5px"
                          :align :center
                          :children (for [category all-commands]
-                                     (command-category category))]]]]))
+                                     ^{:key category} (command-category category))]]]]))
 
 (defn command-search []
-  (let [search-filter (re-frame.core/subscribe [:command-filter])]
+  (let [search-filter (re-frame/subscribe [:command-filter])]
     [ui/v-box
      :children [[ui/label :label "Filter Commands"
                  :style {:margin-top "5px"
@@ -225,7 +225,7 @@
 
 (defn center-container []
   [ui/v-box
-   :size "0 0 auto"
+   :size "0 1 auto"
    :children [[command-viewer]
               [ui/box
                :height "50%"

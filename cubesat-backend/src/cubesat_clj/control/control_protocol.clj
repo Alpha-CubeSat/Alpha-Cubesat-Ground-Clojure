@@ -20,12 +20,8 @@
 ;; and convert to keywords later
 (s/defschema Command
   "Supported uplink commands. Original names from Alpha docs in comments"
-  {:operation (s/conditional
-                ;; TODO the rest of them
-                (is-type? :report) {:type (s/eq :report)}
-                (is-type? :imu) {:type (s/eq :imu)}
-                (is-type? :echo) {:type   (s/eq :echo)
-                                  :fields {:input s/Str}})})
+  {:type s/Keyword
+   :fields {s/Any s/Any}})
 
 
 (s/defschema Macro
@@ -64,7 +60,7 @@
 
   Example:
     (get-no-arg 20)
-    returns the string '20,!'"
+    returns the string '20,00!'"
   [operation]
   (str (-> operation :type uplink-opcodes pad-single-digit) ",00" "!"))
 
@@ -76,7 +72,7 @@
 
   Example:
     (parse-single-arg {:type :report :example 50} :example)
-    returns the string '1,50!' "
+    returns the string '01,50!'"
   [operation key]
   (str (-> operation :type uplink-opcodes pad-single-digit) "," (-> operation key pad-single-digit) "!"))
 
@@ -84,7 +80,7 @@
 (defn parse-command-args
   "Takes a Command and translates it to a string representation as
   specified in the Alpha documentation"
-  [{operation :operation}]
+  [operation]
   (case (:type operation)
     ;TODO the rest of them
     :report (get-no-arg operation)

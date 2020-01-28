@@ -27,8 +27,8 @@
     (do (println "[DEBUG] Error: ")
         (println (.getMessage e))
         (.printStackTrace e)
-        (println "DATA: " data)
-        (println "REQUEST: " request)
+        ;(println "DATA: " data)
+        ;(println "REQUEST: " request)
         (f {:message (.getMessage e), :type type}))))
 
 (defn- make-docs []

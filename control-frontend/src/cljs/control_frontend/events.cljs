@@ -1,14 +1,15 @@
 (ns control-frontend.events
   (:require
-   [re-frame.core :as re-frame]
-   [control-frontend.db :as db]
-   [ajax.core :as http]
-   [day8.re-frame.http-fx]))
+    [re-frame.core :as re-frame]
+    [control-frontend.db :as db]
+    [control-frontend.util.http :refer [token]]
+    [ajax.core :as http]
+    [day8.re-frame.http-fx]))
 
 (re-frame/reg-event-db
- ::initialize-db
- (fn [_ _]
-   db/default-db))
+  ::initialize-db
+  (fn [_ _]
+    db/default-db))
 
 (re-frame/reg-event-fx
   :change-command-filter
@@ -24,15 +25,16 @@
 
 (re-frame/reg-event-fx
   :submit-command
-  (fn [_ [_ type fields]]
-    {:http-xhrio {:method :post
-                  :uri "/api/cubesat/control"
-                  :params {:operation {:type type
-                                       :fields fields}}
-                  :format (http/json-request-format)
+  (fn [{:keys [db]} [_ type fields]]
+    {:http-xhrio {:method          :post
+                  :uri             "/api/cubesat/control"
+                  :headers         {:authorization (token (get-in db [:control-auth :token]))}
+                  :params          {:type   type
+                                    :fields fields}
+                  :format          (http/json-request-format)
                   :response-format (http/json-response-format {:keywords? true})
-                  :on-success [:command-submit-success]
-                  :on-failure [:command-submit-fail]}}))
+                  :on-success      [:command-submit-success]
+                  :on-failure      [:command-submit-fail]}}))
 
 (re-frame/reg-event-fx
   :command-submit-success
@@ -49,14 +51,14 @@
 (re-frame/reg-event-fx
   :login-submitted
   (fn [_ [_ username password]]
-    {:http-xhrio {:method :post
-                  :uri "/api/auth/login"
-                  :params {:username username
-                           :password password}
-                  :format (http/json-request-format)
+    {:http-xhrio {:method          :post
+                  :uri             "/api/auth/login"
+                  :params          {:username username
+                                    :password password}
+                  :format          (http/json-request-format)
                   :response-format (http/json-response-format {:keywords? true})
-                  :on-success [:login-success]
-                  :on-failure [:login-failure]}}))
+                  :on-success      [:login-success]
+                  :on-failure      [:login-failure]}}))
 
 (re-frame/reg-event-fx
   :login-success

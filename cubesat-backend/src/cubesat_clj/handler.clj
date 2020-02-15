@@ -89,7 +89,8 @@
         (POST "/telemetry" []
           :return nil
           :summary "Receive data from rockblock web services"
-          :middleware [telemetry/fix-rockblock-date]
+          :middleware [telemetry/verify-rockblock-data
+                       telemetry/fix-rockblock-date]
           :body [report downlink/RockblockReport]
           (telemetry/handle-report! report)))
 

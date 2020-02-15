@@ -27,17 +27,28 @@
     (es/index! index es/daily-index-strategy data)))
 
 
+(defn- add-report-metadata
+  "Adds metadata such as transmit time from a rockblock report into a cubesat report"
+  [rockblock-report cubesat-data]
+  (let [{:keys [imei transmit_time]} rockblock-report]
+    (assoc cubesat-data
+      :imei imei
+      :transmit-time transmit_time)))
+
+
 (defn- handle-bad-data
   "Process a message with an unknown opcode or misformed data by saving the exception in elasticsearch"
-  [{:keys [transmit_time imei data]} packet exception-str]
-  (let [report (assoc {} :imei imei :transmit-time transmit_time :error exception-str :raw-data data)]
+  [rockblock-report packet exception-str]
+  (let [report (assoc (add-report-metadata rockblock-report {})
+                 :error exception-str
+                 :raw-data (:data rockblock-report))]
     (save-cubesat-data report)))
 
 
 (defn- handle-no-data
-  "Process empty respnose from cubesat by just logging that it happened into into ES"
-  [{:keys [transmit_time imei]} packet]
-  (let [report (assoc {} :imei imei :transmit-time transmit_time)]
+  "Process empty response from cubesat by just logging that it happened into into ES"
+  [rockblock-report packet]
+  (let [report (add-report-metadata rockblock-report {})]
     (save-cubesat-data report)))
 
 
@@ -45,10 +56,10 @@
   "Process image fragment data sent by cubesat. Image comes over several fragments as
   rockblock only supports so much protocol. Image 'fragments' are then assembled into full images
   when fully collected, and saved into the image database"
-  [{:keys [transmit_time imei]} packet]
+  [rockblock-report packet]
   (let [image-data (protocol/read-image-data packet)
         {:keys [image-serial-number image-fragment-number image-max-fragments image-data]} image-data
-        report (assoc image-data :imei imei :transmit-time transmit_time)]
+        report (add-report-metadata rockblock-report image-data)]
     (save-cubesat-data report)
     (img/save-fragment image-serial-number image-fragment-number image-data)
     (img/try-save-image image-serial-number image-max-fragments)))
@@ -57,11 +68,10 @@
 (defn- handle-imu-data
   "Processes IMU data from a cubesat packet by saving the report to Elasticsearch
   with some metadata from the rockblock data"
-  [{:keys [transmit_time imei]} packet]
+  [rockblock-report packet]
   (let [imu-data (protocol/read-imu-data packet)
-        report (assoc imu-data :imei imei :transmit-time transmit_time)]
+        report (add-report-metadata rockblock-report imu-data)]
     (save-cubesat-data report)))
-
 
 
 (defn- handle-cubesat-data
@@ -77,20 +87,25 @@
          (catch Exception e (handle-bad-data rockblock-report packet (.getMessage e))))))
 
 
-;; TODO Verifying the JWT and replacing original request with its contents should really be taken care of by middleware
 (defn handle-report!
-  "Handles a report sent by the rockblock web service API.
-  Does not use data sent in report, but instead that which is decoded from
-  the provided JWT"
+  "Handles a report sent by the rockblock web service API, decodes from it the cubesat data,
+  and routes it to cubesat data handlers."
   [rockblock-report]
-  (if-let [report-data (assoc (protocol/verify-rockblock-request rockblock-report)
-                         :transmit_time (:fixed-transmit-time rockblock-report))]
-    (do (println "Got Report:" "\r\n" report-data "\r\n\r\n")
-        (save-rockblock-report report-data)
-        (when (:data report-data)
-          (handle-cubesat-data report-data))
-        (http/ok))
-    (http/unauthorized)))
+  (println "Got Report:" "\r\n" rockblock-report "\r\n\r\n")
+  (save-rockblock-report rockblock-report)
+  (when (:data rockblock-report)
+    (handle-cubesat-data rockblock-report))
+  (http/ok))
+
+
+(defn verify-rockblock-data
+  "Middleware that verifies the JWT sent in a rockblock report, and extracts the data.
+  Does not use data sent in report, but instead that which is decoded from the provided JWT since it is an exact copy."
+  [handler]
+  (fn [request]
+    (if-let [verified-data (protocol/verify-rockblock-request (:body-params request))]
+      (handler (assoc request :body-params verified-data))
+      (http/unauthorized))))
 
 
 (defn fix-rockblock-date
@@ -103,7 +118,6 @@
   (fn [request]
     (let [time (get-in request [:body-params :transmit_time])
           formatted-time (str "20" (.replace time " " "T") "Z") ; Warning: This hack will cease to work in the year 2100
-          fixed-request (assoc-in request [:body-params :fixed-transmit-time] formatted-time)
-          fixed-request-2 (assoc-in fixed-request [:body-params :transmit_time] formatted-time)]
+          fixed-request (assoc-in request [:body-params :transmit_time] formatted-time)]
       (println "middleware fixed time: " formatted-time)
-      (handler fixed-request-2))))
+      (handler fixed-request))))

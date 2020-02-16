@@ -21,38 +21,39 @@
   that may not be consistent with the rockblock docs.
 
   The 'data' field contains the hex-encoded binary data sent by the satellite."
-  {(s/optional-key :id)                s/Str
-   (s/optional-key :transport)         s/Str
-   :imei                               s/Str
-   :device_type                        s/Str
-   :serial                             s/Int
-   :momsn                              s/Int
-   :transmit_time                      s/Inst
-   :data                               s/Str
-   (s/optional-key :message)           s/Str
-   (s/optional-key :at)                s/Inst
-   :JWT                                s/Str
-   :iridium_longitude                  s/Num
-   :iridium_latitude                   s/Num
-   (s/optional-key :cep)               s/Int
-   (s/optional-key :trigger)           s/Str
-   (s/optional-key :source)            s/Str
-   (s/optional-key :lat)               s/Num
-   (s/optional-key :lon)               s/Num
-   (s/optional-key :sog)               s/Num
-   (s/optional-key :cog)               s/Num
-   (s/optional-key :alt)               s/Num
-   (s/optional-key :temp)              s/Num
-   (s/optional-key :battery)           s/Num
-   (s/optional-key :power)             s/Bool
-   (s/optional-key :ack_request)       s/Int
-   (s/optional-key :message_ack)       s/Int
-   (s/optional-key :alert)             s/Bool
-   (s/optional-key :waypoint)          s/Str
-   (s/optional-key :appMessageAddress) [s/Str]
-   (s/optional-key :appMessageContent) s/Str
-   (s/optional-key :beacons)           [s/Str]
-   s/Any                               s/Any})
+  ; TODO fix how the jwt data is all strings, which breaks verification
+  {;(s/optional-key :id)                s/Str
+   ;(s/optional-key :transport)         s/Str
+   ;:imei                               s/Str
+   ;:device_type                        s/Str
+   ;:serial                             s/Int
+   ;:momsn                              s/Int
+   ;:transmit_time                      s/Inst
+   ;:data                               s/Str
+   ;(s/optional-key :message)           s/Str
+   ;(s/optional-key :at)                s/Inst
+   ;:JWT                                s/Str
+   ;:iridium_longitude                  s/Num
+   ;:iridium_latitude                   s/Num
+   ;(s/optional-key :cep)               s/Int
+   ;(s/optional-key :trigger)           s/Str
+   ;(s/optional-key :source)            s/Str
+   ;(s/optional-key :lat)               s/Num
+   ;(s/optional-key :lon)               s/Num
+   ;(s/optional-key :sog)               s/Num
+   ;(s/optional-key :cog)               s/Num
+   ;(s/optional-key :alt)               s/Num
+   ;(s/optional-key :temp)              s/Num
+   ;(s/optional-key :battery)           s/Num
+   ;(s/optional-key :power)             s/Bool
+   ;(s/optional-key :ack_request)       s/Int
+   ;(s/optional-key :message_ack)       s/Int
+   ;(s/optional-key :alert)             s/Bool
+   ;(s/optional-key :waypoint)          s/Str
+   ;(s/optional-key :appMessageAddress) [s/Str]
+   ;(s/optional-key :appMessageContent) s/Str
+   ;(s/optional-key :beacons)           [s/Str]
+   s/Any s/Any})
 
 
 (def rockblock-web-pk

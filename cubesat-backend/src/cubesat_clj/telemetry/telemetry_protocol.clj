@@ -88,17 +88,19 @@
   "Packet opcodes for cubesat (see Alpha documentation for specification)"
   {21 ::normal-report
    22 ::normal-report-faults
+   34 ::special-report
    42 ::ttl
-   69 ::special-report                                      ;deprecated? Use the 7x opcodes for specific reports
-   70 ::imu
-   71 ::photoresistor
+   ;69 ::special-report                                      ;deprecated? Use the 7x opcodes for specific reports
+   ;70 ::imu
+   71 ::imu
    72 ::temperature
    73 ::inhibs
    74 ::rbf
    75 ::current-sensor
    76 ::battery-voltage
    77 ::sd-card
-   78 ::button})
+   78 ::button
+   255 ::ack})
 
 
 (defn read-opcode
@@ -134,7 +136,31 @@
   [packet]
   (reader/read-structure
     packet
-    [:x-mag ::reader/uint8
+    [:msh-mag ::reader/uint8
+     :msh-gyro ::reader/uint8
+     :msh-acc ::reader/uint8
+     :x-mag ::reader/uint8
+     :y-mag ::reader/uint8
+     :z-mag ::reader/uint8
+     :x-gyro ::reader/uint8
+     :y-gyro ::reader/uint8
+     :z-gyro ::reader/uint8
+     :x-accel ::reader/uint8
+     :y-accel ::reader/uint8
+     :z-accel ::reader/uint8
+     :imu-temp ::reader/uint8
+     :placeholder ::reader/uint8]))
+
+
+(defn read-normal-report
+  "Reads a normal report from an incoming packet"
+  [packet]
+  (reader/read-structure
+    packet
+    [:msh-mag ::reader/uint8
+     :msh-gyro ::reader/uint8
+     :msh-acc ::reader/uint8
+     :x-mag ::reader/uint8
      :y-mag ::reader/uint8
      :z-mag ::reader/uint8
      :x-gyro ::reader/uint8
@@ -146,4 +172,60 @@
      :imu-temp ::reader/uint8
      :temp ::reader/uint8
      :solar-current ::reader/uint8
-     :battery-voltage ::reader/uint8]))
+     :battery ::reader/uint8
+     :placeholder ::reader/uint8]))
+
+
+(defn read-special-report
+  "Reads a special report from an incoming packet"
+  [packet]
+  (reader/read-structure
+    packet
+    [:msh-imu-active ::reader/uint8
+     :msh-mag ::reader/uint8
+     :msh-gyro ::reader/uint8
+     :msh-acc ::reader/uint8
+     :x-mag ::reader/uint8
+     :y-mag ::reader/uint8
+     :z-mag ::reader/uint8
+     :x-gyro ::reader/uint8
+     :y-gyro ::reader/uint8
+     :z-gyro ::reader/uint8
+     :x-accel ::reader/uint8
+     :y-accel ::reader/uint8
+     :z-accel ::reader/uint8
+     :msh-mag-log-0 ::reader/uint8
+     :msh-gyro-log-0 ::reader/uint8
+     :msh-accel-log-0 ::reader/uint8
+     :msh-mag-log-1 ::reader/uint8
+     :msh-gyro-log-1 ::reader/uint8
+     :msh-accel-log-1 ::reader/uint8
+     :msh-mag-log-2 ::reader/uint8
+     :msh-gyro-log-2 ::reader/uint8
+     :msh-accel-log-2 ::reader/uint8
+     :imu-temp ::reader/uint8
+     :temp ::reader/uint8
+     :solar-current ::reader/uint8
+     :battery ::reader/uint8
+     :door-button ::reader/uint8
+     :inhibitor-19a ::reader/uint8
+     :inhibitor-10b ::reader/uint8
+     :inhibitor-2 ::reader/uint8
+     :free-hub ::reader/uint8
+     :next-mode ::reader/uint8
+     :downlink-size ::reader/uint8
+     :downlink-period ::reader/uint8
+     :uplink-period ::reader/uint8
+     :mt-queued ::reader/uint8
+     :sbdix-fails ::reader/uint8
+     :low-power-timer ::reader/uint8
+     :placeholder ::reader/uint8]))
+
+
+(defn read-ack
+  "Reads acknowledgement/success data from the packet"
+  [packet]
+  (reader/read-structure
+    packet
+    [:ack-first-byte ::reader/uint8
+     :ack-second-byte ::reader/uint8]))

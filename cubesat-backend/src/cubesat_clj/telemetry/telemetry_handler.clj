@@ -56,21 +56,21 @@
   "Process image fragment data sent by cubesat. Image comes over several fragments as
   rockblock only supports so much protocol. Image 'fragments' are then assembled into full images
   when fully collected, and saved into the image database"
-  [rockblock-report packet]
+  [type rockblock-report packet]
   (let [image-data (protocol/read-image-data packet)
         {:keys [image-serial-number image-fragment-number image-max-fragments image-data]} image-data
-        report (add-report-metadata rockblock-report image-data)]
+        report (assoc (add-report-metadata rockblock-report image-data) :telemetry-report-type type)]
     (save-cubesat-data report)
     (img/save-fragment image-serial-number image-fragment-number image-data)
     (img/try-save-image image-serial-number image-max-fragments)))
 
 
-(defn- handle-imu-data
-  "Processes IMU data from a cubesat packet by saving the report to Elasticsearch
-  with some metadata from the rockblock data"
-  [rockblock-report packet]
-  (let [imu-data (protocol/read-imu-data packet)
-        report (add-report-metadata rockblock-report imu-data)]
+(defn- handle-report-data
+  "Processes report data from a cubesat packet by saving the report to Elasticsearch
+  with some metadata from the rockblock data. Accepts a function to read the data from the packet."
+  [type rockblock-report packet read-fn]
+  (let [data (read-fn packet)
+        report (assoc (add-report-metadata rockblock-report data) :telemetry-report-type type)]
     (save-cubesat-data report)))
 
 
@@ -82,8 +82,11 @@
         op (protocol/read-opcode packet)]
     (try (case op
            ::protocol/empty-packet (handle-no-data rockblock-report packet)
-           ::protocol/imu (handle-imu-data rockblock-report packet)
-           ::protocol/ttl (handle-ttl-data rockblock-report packet))
+           ::protocol/imu (handle-report-data op rockblock-report packet protocol/read-imu-data)
+           ::protocol/normal-report (handle-report-data op rockblock-report packet protocol/read-normal-report)
+           ::protocol/special-report (handle-report-data op rockblock-report packet protocol/read-special-report)
+           ::protocol/ack (handle-report-data op rockblock-report packet protocol/read-ack)
+           ::protocol/ttl (handle-ttl-data op rockblock-report packet))
          (catch Exception e (handle-bad-data rockblock-report packet (.getMessage e))))))
 
 

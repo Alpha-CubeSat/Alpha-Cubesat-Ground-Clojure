@@ -74,7 +74,7 @@
 (defn elasticsearch-endpoint
   "Returns ElasticSearch connection information."
   [config]
-  (let [es-conf (get-in config [:database :elastisearch])
+  (let [es-conf (get-in config [:database :elasticsearch])
         {:keys [host port] :as endpoint} es-conf]
     endpoint))
 
@@ -100,7 +100,7 @@
 (defn rockblock-credentials
   "Returns credentials for RockBlock account."
   [config]
-  (get-in config [:contorl :rockblock :basic-auth]))
+  (get-in config [:control :rockblock :basic-auth]))
 
 
 (defn jws-secret

@@ -22,7 +22,8 @@
                                              (s/optional-key :conn-timeout) s/Int ; timeout in millis
                                              :content-type                  (s/enum :json)}} ; Elastich requires json but doesnt use it by default
                :image         {:root s/Str}}
-   :control   {:rockblock {:imei       s/Str
+   :control   {:elasticsearch-indices {:command-log s/Str}
+               :rockblock {:imei       s/Str
                            :basic-auth [s/Str]}}})          ; ["user" "pass"]
 
 (def config
@@ -69,6 +70,11 @@
   "Returns the configured ElasticSearch index base name for Cubesat data."
   [config]
   (get-in config [:telemetry :elasticsearch-indices :cubesat]))
+
+(defn control-db-index
+  "Returns hte configured ElasticSearch index base name for control logs"
+  [config]
+  (get-in config [:control :elasticsearch-indices :command-log]))
 
 
 (defn elasticsearch-endpoint

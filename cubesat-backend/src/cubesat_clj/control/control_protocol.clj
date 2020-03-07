@@ -3,7 +3,8 @@
   format used by the cubesat for commands."
   (:require [clj-http.client :as http]
             [cubesat-clj.util.binary.hex-string :as bin]
-            [schema.core :as s]))
+            [schema.core :as s]
+            [cuerdas.core :as str]))
 
 
 ;; ---------------------- Ground API ------------------------------
@@ -23,6 +24,12 @@
   {:type s/Keyword
    :fields {s/Any s/Any}})
 
+(s/defschema CommandResponse
+  {:status s/Str
+   (s/optional-key :id) s/Str
+   (s/optional-key :error-code) s/Str
+   (s/optional-key :desc) s/Str})
+
 
 (s/defschema Macro
   "Multiple commands grouped together"
@@ -39,7 +46,7 @@
 ;;TODO the rest of them
 (def ^:const uplink-opcodes
   "Uplink command opcodes by command type"
-  {:report 1
+  {:report 3
    :imu    4
    :echo   5})
 
@@ -88,16 +95,29 @@
     :echo (parse-single-arg operation :input)))
 
 
-;TODO parse the RB response code according to their documentation
 (defn send-uplink
   "Sends an uplink request to the satellite via the
   Rockblock API. Requires rockblock user, password, and
-  imei for the radio, as well as the string data to send"
+  imei for the radio, as well as the string data to send. Returns
+  the rockblock web services response data as a map with keys [:status :id :error-code :description].
+  :description and :code are only returned when there is an error, and :id is only returned on success
+  The possible responses are documented at https://www.rock7.com/downloads/RockBLOCK-Web-Services-User-Guide.pdf"
   [imei user pass data]
   (let [binary (bin/hexify data)
         request {:imei     imei
                  :username user
                  :password pass
                  :data     binary}
-        response (http/post rockblock-endpoint {:form-params request})]
-    (println "GOT RESPONSE: " response)))
+        response (http/post rockblock-endpoint {:form-params request})
+        [status code desc] (str/split (:body response) ",")
+        response-map (conj {:status status}
+                           (when (= status "FAILED") {:desc desc :error-code code})
+                           (when (= status "SUCCESS") {:id code}))]
+    (println "GOT RESPONSE: " response-map)
+    response-map))
+
+
+(defn rb-is-success
+  "Returns if a response from rockblock web services has a successful status code"
+  [rockblock-response]
+  (= :status rockblock-response "OK"))

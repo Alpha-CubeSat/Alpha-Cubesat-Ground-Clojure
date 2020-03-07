@@ -109,7 +109,7 @@
               (header "Content-Type" "image/jpeg")))
 
         (POST "/control" []
-          :return {:response s/Str}
+          :return {:response uplink/CommandResponse}
           :summary "Process a command to be sent to cubesat."
           :middleware [auth/wrap-auth]
           :header-params [authorization :- s/Str]

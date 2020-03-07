@@ -9,5 +9,6 @@
                                            :basic-auth   ["example-user" "example-password"]}}
              :image         {:root "cubesat_images"}}
 
- :control   {:rockblock {:imei       "example-imei"
+ :control   {:elasticsearch-indices {:command-log "commands"}
+             :rockblock {:imei       "example-imei"
                          :basic-auth ["example-user" "example-password"]}}}

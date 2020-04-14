@@ -81,7 +81,7 @@
     (parse-single-arg {:type :report :example 50} :example)
     returns the string '01,50!'"
   [operation key]
-  (str (-> operation :type uplink-opcodes pad-single-digit) "," (-> operation key pad-single-digit) "!"))
+  (str (-> operation :type uplink-opcodes pad-single-digit) "," (-> operation :fields key pad-single-digit) "!"))
 
 
 (defn parse-command-args

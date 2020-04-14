@@ -27,67 +27,26 @@
     (es/index! index es/daily-index-strategy data)))
 
 
-(defn- add-report-metadata
-  "Adds metadata such as transmit time from a rockblock report into a cubesat report"
-  [rockblock-report cubesat-data]
-  (let [{:keys [imei transmit_time]} rockblock-report]
-    (assoc cubesat-data
-      :imei imei
-      :transmit-time transmit_time)))
-
-
-(defn- handle-bad-data
-  "Process a message with an unknown opcode or misformed data by saving the exception in elasticsearch"
-  [rockblock-report packet exception-str]
-  (let [report (assoc (add-report-metadata rockblock-report {})
-                 :error exception-str
-                 :raw-data (:data rockblock-report))]
-    (save-cubesat-data report)))
-
-
-(defn- handle-no-data
-  "Process empty response from cubesat by just logging that it happened into into ES"
-  [rockblock-report packet]
-  (let [report (add-report-metadata rockblock-report {})]
-    (save-cubesat-data report)))
-
-
-(defn- handle-ttl-data
+(defn- save-ttl-data
   "Process image fragment data sent by cubesat. Image comes over several fragments as
   rockblock only supports so much protocol. Image 'fragments' are then assembled into full images
   when fully collected, and saved into the image database"
-  [type rockblock-report packet]
-  (let [image-data (protocol/read-image-data packet)
-        {:keys [image-serial-number image-fragment-number image-max-fragments image-data]} image-data
-        report (assoc (add-report-metadata rockblock-report image-data) :telemetry-report-type type)]
-    (save-cubesat-data report)
+  [ttl-data]
+  (let [{:keys [image-serial-number image-fragment-number image-max-fragments image-data]} ttl-data]
+    (save-cubesat-data ttl-data)
     (img/save-fragment image-serial-number image-fragment-number image-data)
     (img/try-save-image image-serial-number image-max-fragments)))
-
-
-(defn- handle-report-data
-  "Processes report data from a cubesat packet by saving the report to Elasticsearch
-  with some metadata from the rockblock data. Accepts a function to read the data from the packet."
-  [type rockblock-report packet read-fn]
-  (let [data (read-fn packet)
-        report (assoc (add-report-metadata rockblock-report data) :telemetry-report-type type)]
-    (save-cubesat-data report)))
 
 
 (defn- handle-cubesat-data
   "Handles a packet from the cubesat as per the Alpha specification. Reads an opcode,
   and depending on the result, parses and stores the corresponding data"
   [rockblock-report]
-  (let [packet (protocol/get-cubesat-message-binary rockblock-report)
-        op (protocol/read-opcode packet)]
-    (try (case op
-           ::protocol/empty-packet (handle-no-data rockblock-report packet)
-           ::protocol/imu (handle-report-data op rockblock-report packet protocol/read-imu-data)
-           ::protocol/normal-report (handle-report-data op rockblock-report packet protocol/read-normal-report)
-           ::protocol/special-report (handle-report-data op rockblock-report packet protocol/read-special-report)
-           ::protocol/ack (handle-report-data op rockblock-report packet protocol/read-ack)
-           ::protocol/ttl (handle-ttl-data op rockblock-report packet))
-         (catch Exception e (handle-bad-data rockblock-report packet (.getMessage e))))))
+  (let [result (protocol/read-cubesat-data rockblock-report)
+        operation (:telemetry-report-type result)]
+    (case operation
+      ::protocol/ttl (save-ttl-data result)
+      (save-cubesat-data result))))
 
 
 (defn handle-report!

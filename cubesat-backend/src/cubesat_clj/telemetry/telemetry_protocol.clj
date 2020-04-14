@@ -75,7 +75,7 @@
              nil))))
 
 
-(defn get-cubesat-message-binary
+(defn- get-cubesat-message-binary
   "Gets the string encoded binary data sent by the cubesat as a java nio ByteBuffer"
   [rockblock-report]
   (-> (:data rockblock-report)
@@ -87,25 +87,25 @@
 
 (def ^:const opcodes
   "Packet opcodes for cubesat (see Alpha documentation for specification)"
-  {21 ::normal-report
-   22 ::normal-report-faults
-   34 ::special-report
-   42 ::ttl
+  {21  ::normal-report
+   22  ::normal-report-faults
+   34  ::special-report
+   42  ::ttl
    ;69 ::special-report                                      ;deprecated? Use the 7x opcodes for specific reports
    ;70 ::imu
-   71 ::imu
-   72 ::temperature
-   73 ::inhibs
-   74 ::rbf
-   75 ::current-sensor
-   76 ::battery-voltage
-   77 ::sd-card
-   78 ::button
+   71  ::imu
+   72  ::temperature
+   73  ::inhibs
+   74  ::rbf
+   75  ::current-sensor
+   76  ::battery-voltage
+   77  ::sd-card
+   78  ::button
    255 ::ack})
 
 
-(defn read-opcode
-  "Reads the opcode of an incoming packet"
+(defn- read-opcode
+  "Reads the opcode of an incoming packet. If empty packet is received, returns ::empry-packet instead"
   [packet]
   (if (= (reader/remaining packet) 0)
     ::empty-packet
@@ -114,12 +114,15 @@
         opcodes)))
 
 
-(defn read-image-data
-  "Reads image data from a packet using the specified cubesat protocol in the Alpha documentation.
-  Image is received in fragments, :data-length bytes each, which must be assembled into the full image
-  after receiving all fragments. The serial number is which image is being sent, and the fragment number
-  is which part of the image being sent"
-  [packet]
+(defmulti read-packet-data
+          "Reads data from a packet based on opcode.
+          Note: Image data is received in fragments, :data-length bytes each, which must be assembled into a full image
+          after receiving all fragments. The serial number is which image is being sent, and the fragment number
+          is which part of the image being sent"
+          (fn [[opcode packet]] opcode))
+
+(defmethod read-packet-data ::ttl
+  [[_ packet]]
   (let [metadata (reader/read-structure
                    packet
                    [:image-serial-number ::reader/uint16
@@ -132,9 +135,8 @@
     (merge metadata fragment)))
 
 
-(defn read-imu-data
-  "Reads IMU data from an incoming packet using cubesat protocol specified in the Alpha documentation"
-  [packet]
+(defmethod read-packet-data ::imu
+  [[_ packet]]
   (reader/read-structure
     packet
     [:msh-mag ::reader/uint8
@@ -153,9 +155,8 @@
      :placeholder ::reader/uint8]))
 
 
-(defn read-normal-report
-  "Reads a normal report from an incoming packet"
-  [packet]
+(defmethod read-packet-data ::normal-report
+  [[_ packet]]
   (reader/read-structure
     packet
     [:msh-mag ::reader/uint8
@@ -177,9 +178,8 @@
      :placeholder ::reader/uint8]))
 
 
-(defn read-special-report
-  "Reads a special report from an incoming packet"
-  [packet]
+(defmethod read-packet-data ::special-report
+  [[_ packet]]
   (reader/read-structure
     packet
     [:msh-imu-active ::reader/uint8
@@ -223,10 +223,41 @@
      :placeholder ::reader/uint8]))
 
 
-(defn read-ack
-  "Reads acknowledgement/success data from the packet"
-  [packet]
+(defmethod read-packet-data ::ack
+  [[_ packet]]
   (reader/read-structure
     packet
     [:ack-first-byte ::reader/uint8
      :ack-second-byte ::reader/uint8]))
+
+
+(defn- report-metadata
+  "Returns rockblock metadata such as transmit time from a rockblock report as a map"
+  [rockblock-report]
+  (let [{:keys [imei transmit_time]} rockblock-report]
+    {:imei          imei
+     :transmit-time transmit_time}))
+
+
+(defn- error-data
+  "Returns a map containing a cubesat report with the error opcode, raw data, and an error message"
+  [rockblock-report error-msg]
+  {:telemetry-report-type ::error
+   :error    error-msg
+   :raw-data (:data rockblock-report)})
+
+
+(defn read-cubesat-data
+  "Reads the cubesat data inside a rockblock report. Returns a map containing the data if read, or an error report
+  if the packet is empty or some issue occurred. If the data is successfully read, the opcode is returned in the
+  result map as :telemetry-report-type. Otherwise :telemetry-report-type is set to ::error"
+  [rockblock-report]
+  (let [packet (get-cubesat-message-binary rockblock-report)
+        op (read-opcode packet)
+        meta (report-metadata rockblock-report)
+        result (if (= op ::empty-packet)
+                 (error-data rockblock-report "empty packet")
+                 (try
+                   (assoc (read-packet-data [op packet]) :telemetry-report-type op)
+                   (catch Exception e (error-data rockblock-report (.getMessage e)))))]
+    (merge meta result)))

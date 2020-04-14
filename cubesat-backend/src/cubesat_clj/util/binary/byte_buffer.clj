@@ -7,19 +7,19 @@
   binary-reader
 
   (read-uint32 [buffer]
-    (bit-and (.getInt buffer) 0xFFFFFFFFFFFFFFFF))
+    (bit-and (.getInt buffer) 0x00000000FFFFFFFF))
 
   (read-int32 [buffer]
     (.getInt buffer))
 
   (read-uint16 [buffer]
-    (bit-and (.getShort buffer) 0xFFFFFFFF))
+    (bit-and (.getShort buffer) 0x0000FFFF))
 
   (read-int16 [buffer]
     (.getShort buffer))
 
   (read-uint8 [buffer]
-    (bit-and (.get buffer) 0xFFFFFFFF))
+    (bit-and (.get buffer) 0x000000FF))
 
   (read-int8 [buffer]
     (.get buffer))

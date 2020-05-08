@@ -135,10 +135,9 @@
    :children [[ui/title
                :level :level3
                :label "Description"]
-              [ui/scroller
-               :size "1 1 auto"
-               :v-scroll :auto
-               :child [ui/p text]]]])
+              [ui/p
+               {:style {:width "100%" :min-width "200px"}}
+               text]]])
 
 (defn command-actions [responses comm-type]
   [ui/v-box
@@ -147,19 +146,19 @@
                :level :level3
                :style {:margin-bottom "-5px"}
                :label "Actions"]
-              [ui/h-box
-               :gap "10px"
-               :align :baseline
-               :children [[ui/label
-                           :label "Run after:"]
-                          [ui/input-time
-                           :model 900
-                           :on-change #()]
-                          [ui/button
-                           :style {:width            "150px"
-                                   :background-color "#00C851"
-                                   :color            "#f0f0f0"}
-                           :label "Schedule"]]]
+              ;[ui/h-box
+              ; :gap "10px"
+              ; :align :baseline
+              ; :children [[ui/label
+              ;             :label "Run after:"]
+              ;            [ui/input-time
+              ;             :model 900
+              ;             :on-change #()]
+              ;            [ui/button
+              ;             :style {:width            "150px"
+              ;                     :background-color "#00C851"
+              ;                     :color            "#f0f0f0"}
+              ;             :label "Schedule"]]]
               [ui/button
                :style {:width            "100%"
                        :background-color "#00C851"
@@ -185,14 +184,12 @@
                  :size "1 1 auto"
                  :gap "10px"
                  :children [[command-description description]
-                            [ui/scroller
-                             :v-scroll :auto
+                            [ui/v-box
                              :size "1 1 auto"
-                             :child [ui/v-box
-                                     :size "1 1 auto"
-                                     :gap "15px"
-                                     :children [[command-args fields responses]
-                                                [command-actions responses backend-type]]]]]]]]))
+                             :min-width "200px"
+                             :gap "15px"
+                             :children [[command-args fields responses]
+                                        [command-actions responses backend-type]]]]]]]))
 
 (defn command-viewer []
   (let [selected-command (re-frame/subscribe [:command-selection])
@@ -279,6 +276,7 @@
                                    :border-color     "#2e6da4"}]]]])))
 ;</editor-fold>
 
+; <editor-fold desc="command log">
 
 (defn table-header []
   [ui/h-box
@@ -328,7 +326,6 @@
 
 (defn command-log []
   (let [comm-history (re-frame/subscribe [:command-history])]
-    (js/console.log (str (vec @comm-history)))
     [ui/v-box
      :size "1 1 auto"
      :min-width "300px"
@@ -347,15 +344,34 @@
                          :h-scroll :auto
                          :child [command-history-table @comm-history]]]]]))
 
+; </editor-fold>
+
+
+
+
+(defn image-viewer []
+  [ui/v-box
+   :size "1 1 auto"
+   :style {:margin-top  "-5px"
+           :margin-left "10px"}
+   :children [[ui/title
+               :level :level3
+               :label "Cubesat Images"]
+              [ui/border
+               :size "1 1 auto"
+               :border "0px solid gray"
+               :style {:margin     "10px"
+                       :padding    "10px"
+                       :box-shadow "2px 2px 5px"}
+               :child [ui/h-box
+                       :children [:p "test"]]]]])
 
 (defn center-container []
   [ui/v-box
-   :size "0 1 auto"
+   :size "1 1 auto"
+   :max-width "900px"
    :children [[command-viewer]
-              [ui/box
-               :height "50%"
-               :size "0 0 auto"
-               :child [ui/p "Image placeholder TODO"]]]])
+              [image-viewer]]])
 
 (defn main-container []
   [ui/h-box

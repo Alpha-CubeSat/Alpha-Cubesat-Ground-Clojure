@@ -14,7 +14,8 @@
             [cubesat-clj.control.control-handler :as control]
             [cubesat-clj.auth.auth-handler :as auth]
             [cubesat-clj.auth.auth-protocol :as auth-data]
-            [cubesat-clj.config :as cfg])
+            [cubesat-clj.config :as cfg]
+            [ring.util.http-response :as http])
   (:import (java.io File InputStreamReader ByteArrayInputStream InputStream)
            (java.nio.charset Charset)))
 
@@ -107,6 +108,22 @@
               (io/input-stream)
               (ok)
               (header "Content-Type" "image/jpeg")))
+
+        (GET "/img/recent/:id" []
+          :summary "Returns the n'th most recent ttl data if it exists"
+          :return File
+          :middleware [auth/wrap-auth]
+          :header-params [authorization :- s/Str]
+          :path-params [id :- s/Int]
+          :produces ["image/jpeg"]
+          (try
+            (-> (img/get-recent-images (inc id))
+                (nth id)
+                (io/input-stream)
+                (ok)
+                (header "Content-Type" "image/jpeg"))
+            (catch Exception e
+              (http/bad-request))))
 
         (POST "/control" []
           :return {:response uplink/CommandResponse}

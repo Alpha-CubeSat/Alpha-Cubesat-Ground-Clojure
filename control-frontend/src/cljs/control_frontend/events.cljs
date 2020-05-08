@@ -4,7 +4,8 @@
     [control-frontend.db :as db]
     [control-frontend.util.http :refer [token]]
     [ajax.core :as http]
-    [day8.re-frame.http-fx]))
+    [day8.re-frame.http-fx]
+    [cljs-time.core :as time]))
 
 (re-frame/reg-event-db
   ::initialize-db
@@ -33,20 +34,35 @@
                                     :fields fields}
                   :format          (http/json-request-format)
                   :response-format (http/json-response-format {:keywords? true})
-                  :on-success      [:command-submit-success]
-                  :on-failure      [:command-submit-fail]}}))
+                  :on-success      [:command-submit-success type]
+                  :on-failure      [:command-submit-fail type]}}))
 
 (re-frame/reg-event-fx
   :command-submit-success
-  (fn [_ _]
+  (fn [{:keys [db]} [_ type]]
     (js/console.log "command submitted successfully")
-    nil))
+    (let [history (-> db :commands :history)
+          log {:status    :success
+               :name      type
+               :submitted (str (time/now))
+               :message   ""}
+          new-history (conj history log)
+          truncated (if (> (count new-history) 15) (pop new-history) new-history)]
+      {:db (assoc-in db [:commands :history] truncated)})))
 
 (re-frame/reg-event-fx
   :command-submit-fail
-  (fn [_ _]
+  (fn [{:keys [db]} [_ type resp]]
     (js/console.log "command submission failed")
-    nil))
+    (let [history (-> db :commands :history)
+          log {:status    :failure
+               :name      type
+               :submitted (str (time/now))
+               :message   (str "[" (:status resp) "] "
+                               (-> resp :response :message))}
+          new-history (conj history log)
+          truncated (if (> (count new-history) 15) (pop new-history) new-history)]
+      {:db (assoc-in db [:commands :history] truncated)})))
 
 (re-frame/reg-event-fx
   :login-submitted

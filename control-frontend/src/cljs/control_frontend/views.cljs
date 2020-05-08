@@ -239,7 +239,7 @@
                           [ui/title
                            :level :level4
                            :label "Cubesat control services require authentication with the ground system. Please sign in."
-                           :style {:max-width "250px"
+                           :style {:max-width  "250px"
                                    :margin-top "-7px"}]
                           [ui/line]
                           [ui/p
@@ -273,11 +273,80 @@
                                           (commands/check-field-nonempty (:username @response))
                                           (commands/check-field-nonempty (:password @response))))
                            :on-click #(re-frame/dispatch [:login-submitted (:username @response) (:password @response)])
-                           :style {:align-self "flex-end"
-                                   :color "#fff"
+                           :style {:align-self       "flex-end"
+                                   :color            "#fff"
                                    :background-color "#337ab7"
-                                   :border-color "#2e6da4"}]]]])))
+                                   :border-color     "#2e6da4"}]]]])))
 ;</editor-fold>
+
+
+(defn table-header []
+  [ui/h-box
+   :size "1 1 auto"
+   :max-height "30px"
+   :width "100%"
+   :style {:background "#e8e8e8"}
+   :children [[ui/label
+               :style {:font-weight "bold" :padding "5px" :width "50px" :background "#e8e8e8"}
+               :label "Status"]
+              [ui/label
+               :style {:font-weight "bold" :padding "5px" :width "140px" :background "#e8e8e8"}
+               :label "Name"]
+              [ui/label
+               :style {:font-weight "bold" :padding "5px" :width "151px" :background "#e8e8e8"}
+               :label "Submitted"]
+              [ui/label
+               :style {:font-weight "bold" :padding "5px" :min-width "350px" :background "#e8e8e8"}
+               :label "Message"]]])
+
+
+(defn row [status name submitted message]
+  [ui/h-box
+   :width "100%"
+   :children [[ui/label
+               :style {:padding "5px" :width "50px"}
+               :label status]
+              [ui/label
+               :style {:padding "5px" :width "140px"}
+               :label name]
+              [ui/label
+               :style {:padding "5px" :width "151px"}
+               :label submitted]
+              [ui/box
+               :size "1 1 auto"
+               :child [ui/label
+                       :style {:padding "5px" :max-width "350px" :overflow "hidden"}
+                       :label message]]]])
+
+
+(defn command-history-table [commands]
+  [ui/v-box
+   :children [[table-header]
+              (for [{:keys [status name submitted message]} commands]
+                ^{:key submitted} [row status name submitted message])]])
+
+
+(defn command-log []
+  (let [comm-history (re-frame/subscribe [:command-history])]
+    (js/console.log (str (vec @comm-history)))
+    [ui/v-box
+     :size "1 1 auto"
+     :min-width "300px"
+     :style {:margin-top "-5px"}
+     :children [[ui/title
+                 :level :level3
+                 :label "Command History"]
+                [ui/border
+                 :size "1 1 auto"
+                 :border "0px solid gray"
+                 :style {:margin     "10px"
+                         ;:padding    "10px"
+                         :box-shadow "2px 2px 5px"}
+                 :child [ui/scroller
+                         :v-scroll :auto
+                         :h-scroll :auto
+                         :child [command-history-table @comm-history]]]]]))
+
 
 (defn center-container []
   [ui/v-box
@@ -286,13 +355,14 @@
               [ui/box
                :height "50%"
                :size "0 0 auto"
-               :child [ui/p "Command history placeholder TODO"]]]])
+               :child [ui/p "Image placeholder TODO"]]]])
 
 (defn main-container []
   [ui/h-box
    :size "1 1 auto"
    :children [[command-palette-container]
-              [center-container]]])
+              [center-container]
+              [command-log]]])
 
 (defn main-panel []
   (let [authentication (re-frame/subscribe [:auth-token])]

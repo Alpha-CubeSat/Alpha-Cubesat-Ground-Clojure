@@ -5,4 +5,5 @@
    :control-auth {:token nil}
    :commands {:filter ""
               :selection {:selection-type :default-no-selection
-                          :command nil}}})
+                          :command nil}
+              :history []}})

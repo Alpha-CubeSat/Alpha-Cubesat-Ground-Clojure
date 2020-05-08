@@ -22,3 +22,8 @@
   :auth-token
   (fn [db v]
     (-> db :control-auth :token)))
+
+(re-frame.core/reg-sub
+  :command-history
+  (fn [db v]
+    (-> db :commands :history (reverse))))

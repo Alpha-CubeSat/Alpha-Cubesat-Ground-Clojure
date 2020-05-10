@@ -27,3 +27,8 @@
   :command-history
   (fn [db v]
     (-> db :commands :history (reverse))))
+
+(re-frame.core/reg-sub
+  :cubesat-image
+  (fn [db v]
+    (:cs-image db)))

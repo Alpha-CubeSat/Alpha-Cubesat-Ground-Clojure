@@ -1,9 +1,10 @@
 (ns control-frontend.db)
 
 (def default-db
-  {:name "re-frame"
+  {:name         "re-frame"
    :control-auth {:token nil}
-   :commands {:filter ""
-              :selection {:selection-type :default-no-selection
-                          :command nil}
-              :history []}})
+   :commands     {:filter    ""
+                  :selection {:selection-type :default-no-selection
+                              :command        nil}
+                  :history   []}
+   :cs-image     nil})

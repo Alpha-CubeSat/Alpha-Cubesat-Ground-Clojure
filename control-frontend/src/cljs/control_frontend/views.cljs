@@ -212,11 +212,35 @@
 ; </editor-fold>
 
 ; <editor-fold desc="top bar">
+(defn top-bar-image-button [image-uri]
+  (let [hover (reagent/atom false)]
+    (fn []
+      [ui/box
+       :height "50px"
+       :width "50px"
+       :style {:padding "5px"
+               :background-color (if @hover "#1b1c1e" "#2b2c2e")}
+       :attr {:on-mouse-over #(reset! hover true)
+              :on-mouse-out  #(reset! hover false)}
+       :child [:img {:src image-uri}]])))
+
 (defn top-bar []
   [ui/h-box
    :height "50px"
    :style {:background-color "#2b2c2e"}
-   :children [[:p "Top bar placeholder"]]])
+   :children [[top-bar-image-button "ssa.png"]
+              [top-bar-image-button "kibana.png"]
+              [ui/box                                       ;Fills up the horizontal space so we can right-justify stuff
+               :size "1 1 auto"
+               :child [:p ""]]
+              [ui/label
+               :style {:padding-top "15px"
+                       :padding-right "5px"
+                       :font-size 15
+                       :color "#B5B5B5"}
+               :label "Max "
+               ]
+              [top-bar-image-button "user1.png"]]])
 ; </editor-fold>
 
 ; <editor-fold desc="login popup">
@@ -347,11 +371,48 @@
 ; </editor-fold>
 
 
+(defn img-card [id title]
+  (let [hovered (reagent/atom {:state false})]
+    (fn []
+      [ui/label
+       :label title
+       :style {:width            "100%"
+               :margin-top       "-1px"
+               :padding-left "5px"
+               :background-color (if (:state @hovered) "lightgray" "transparent")}
+       :attr {:on-mouse-over #(reset! hovered {:state true})
+              :on-mouse-out  #(reset! hovered {:state false})
+              :on-click      #(re-frame/dispatch [:change-image-selection id])}])))
+
+(defn img-chooser []
+  [ui/v-box
+   :max-width "120px"
+   :min-height "100%"
+   :size "1 0 auto"
+   :style {:background-color "#f1f1f1"}
+   :children [[ui/label
+               :style {:font-weight "bold" :padding "5px" :min-width "120px" :background "#D2D2D2"}
+               :label "Select Image"]
+              [img-card 0 "Image 24"]
+              [img-card 1 "Image 25"]
+              [img-card 1 "Image 26"]
+              [img-card 1 "Image 27"]
+              [img-card 1 "Image 28"]
+              [img-card 1 "Image 29"]
+              [img-card 1 "Image 30"]
+              [img-card 1 "Image 31"]]])
+
+
+(defn img-display []
+  (let [image-data (re-frame/subscribe [:cubesat-image])]
+    (when @image-data
+      (print @image-data)
+      [:img {:src (str "data:image/jpeg;base64," (:data @image-data))}])))
 
 
 (defn image-viewer []
   [ui/v-box
-   :size "1 1 auto"
+   :size "1 0 auto"
    :style {:margin-top  "-5px"
            :margin-left "10px"}
    :children [[ui/title
@@ -361,10 +422,12 @@
                :size "1 1 auto"
                :border "0px solid gray"
                :style {:margin     "10px"
-                       :padding    "10px"
+                       ;:padding    "10px"
                        :box-shadow "2px 2px 5px"}
                :child [ui/h-box
-                       :children [:p "test"]]]]])
+                       :size "1 1 auto"
+                       :children [[img-chooser]
+                                  [img-display]]]]]])
 
 (defn center-container []
   [ui/v-box

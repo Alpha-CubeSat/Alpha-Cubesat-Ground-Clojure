@@ -5,7 +5,8 @@
     [control-frontend.util.http :refer [token]]
     [ajax.core :as http]
     [day8.re-frame.http-fx]
-    [cljs-time.core :as time]))
+    [cljs-time.core :as time]
+    [goog.crypt.base64 :as b64]))
 
 (re-frame/reg-event-db
   ::initialize-db
@@ -86,4 +87,27 @@
   :login-failure
   (fn [_ _]
     (js/console.log "authentication failed")
+    nil))
+
+(re-frame/reg-event-fx
+  :change-image-selection
+  (fn [{:keys [db]} [_ selected-id]]
+    {:http-xhrio {:method :get
+                  :uri    (str "api/cubesat/img/recent/" selected-id)
+                  :response-format (http/ring-response-format)
+                  :headers         {:authorization (token (get-in db [:control-auth :token]))}
+                  :on-success [:image-success selected-id]
+                  :on-failure [:image-failure]}}))
+
+(re-frame/reg-event-fx
+  :image-success
+  (fn [{:keys [db]} [_ selected-id resp]]
+    (js/console.log (str token " image successfully??" resp))
+    {:db (assoc-in db [:cs-image] {:id   selected-id
+                                   :data (js/btoa (js/decodeURI (js/encodeURIComponent (:body resp))))})}))
+
+(re-frame/reg-event-fx
+  :image-failure
+  (fn [_ _]
+    (js/console.log "image failed??")
     nil))

@@ -7,6 +7,25 @@
     [reagent.core :as reagent]
     [ajax.core :as http]))
 
+;; <editor-fold desc="common">
+(defn widget-card [{:keys [title content]}]
+  [ui/border
+   :size "1 1 auto"
+   :border "0px solid gray"
+   :style {:margin     "10px"
+           ;:padding    "10px"
+           :box-shadow "2px 2px 5px"}
+   :child [ui/v-box
+           :size "1 1 auto"
+           :children [[ui/box
+                       :style {:background-color "#2b2c2e"}
+                       :child [ui/title
+                               :style {:color       "lightgray"
+                                       :margin-left 5}
+                               :level :level3
+                               :label title]]
+                      content]]])
+;; </editor-fold>
 
 ;; <editor-fold desc="command palette">
 (defn command-card-2 [{:keys [title]}]
@@ -194,21 +213,13 @@
 (defn command-viewer []
   (let [selected-command (re-frame/subscribe [:command-selection])
         comm (:command @selected-command)]
-    [ui/v-box
-     :size "1 1 auto"
-     :style {:margin-top  "-5px"
-             :margin-left "10px"}
-     :children [[ui/title
-                 :level :level3
-                 :label "Selection"]
-                (if comm [ui/border
-                          :size "1 1 auto"
-                          :border "0px solid gray"
-                          :style {:margin     "10px"
-                                  :padding    "10px"
-                                  :box-shadow "2px 2px 5px"}
-                          :child [command-form comm]]
-                         [ui/p "No Selection"])]]))
+    [widget-card
+     {:title   "Command Selection"
+      :content [ui/box
+                :size "1 1 auto"
+                :style {:margin  "5px"
+                        :padding "10px"}
+                :child [command-form comm]]}]))
 ; </editor-fold>
 
 ; <editor-fold desc="top bar">
@@ -218,7 +229,7 @@
       [ui/box
        :height "50px"
        :width "50px"
-       :style {:padding "5px"
+       :style {:padding          "5px"
                :background-color (if @hover "#1b1c1e" "#2b2c2e")}
        :attr {:on-mouse-over #(reset! hover true)
               :on-mouse-out  #(reset! hover false)}
@@ -234,10 +245,10 @@
                :size "1 1 auto"
                :child [:p ""]]
               [ui/label
-               :style {:padding-top "15px"
+               :style {:padding-top   "15px"
                        :padding-right "5px"
-                       :font-size 15
-                       :color "#B5B5B5"}
+                       :font-size     15
+                       :color         "#B5B5B5"}
                :label "Max "
                ]
               [top-bar-image-button "user1.png"]]])
@@ -253,7 +264,12 @@
        :style {:font-family "Consolas"}
        :child [ui/v-box
                :gap "13px"
-               :children [[ui/title
+               :children [[:center
+                           [:img {:src        "ssa.png"
+                                  :align-self "center"
+                                  :style      {:height 200
+                                               :width  200}}]]
+                          [ui/title
                            :level :level2
                            :label "Authentication"
                            :style {:margin "0"}]
@@ -350,27 +366,16 @@
 
 (defn command-log []
   (let [comm-history (re-frame/subscribe [:command-history])]
-    [ui/v-box
-     :size "1 1 auto"
-     :min-width "300px"
-     :style {:margin-top "-5px"}
-     :children [[ui/title
-                 :level :level3
-                 :label "Command History"]
-                [ui/border
-                 :size "1 1 auto"
-                 :border "0px solid gray"
-                 :style {:margin     "10px"
-                         ;:padding    "10px"
-                         :box-shadow "2px 2px 5px"}
-                 :child [ui/scroller
-                         :v-scroll :auto
-                         :h-scroll :auto
-                         :child [command-history-table @comm-history]]]]]))
+    [widget-card
+     {:title   "Command History"
+      :content [ui/scroller
+                :v-scroll :auto
+                :h-scroll :auto
+                :child [command-history-table @comm-history]]}]))
 
 ; </editor-fold>
 
-
+;; <editor-fold desc="image viewer">
 (defn img-card [id title]
   (let [hovered (reagent/atom {:state false})]
     (fn []
@@ -378,7 +383,7 @@
        :label title
        :style {:width            "100%"
                :margin-top       "-1px"
-               :padding-left "5px"
+               :padding-left     "5px"
                :background-color (if (:state @hovered) "lightgray" "transparent")}
        :attr {:on-mouse-over #(reset! hovered {:state true})
               :on-mouse-out  #(reset! hovered {:state false})
@@ -409,25 +414,14 @@
       (print @image-data)
       [:img {:src (str "data:image/jpeg;base64," (:data @image-data))}])))
 
-
 (defn image-viewer []
-  [ui/v-box
-   :size "1 0 auto"
-   :style {:margin-top  "-5px"
-           :margin-left "10px"}
-   :children [[ui/title
-               :level :level3
-               :label "Cubesat Images"]
-              [ui/border
-               :size "1 1 auto"
-               :border "0px solid gray"
-               :style {:margin     "10px"
-                       ;:padding    "10px"
-                       :box-shadow "2px 2px 5px"}
-               :child [ui/h-box
-                       :size "1 1 auto"
-                       :children [[img-chooser]
-                                  [img-display]]]]]])
+  [widget-card
+   {:title   "Cubesat Images"
+    :content [ui/h-box
+              :size "1 1 auto"
+              :children [[img-chooser]
+                         [img-display]]]}])
+;; </editor-fold>
 
 (defn center-container []
   [ui/v-box

@@ -7,4 +7,5 @@
                   :selection {:selection-type :default-no-selection
                               :command        nil}
                   :history   []}
+   :cs-images    []
    :cs-image     nil})

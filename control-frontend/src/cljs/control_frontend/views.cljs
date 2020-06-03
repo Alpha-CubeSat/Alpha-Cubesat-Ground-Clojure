@@ -376,43 +376,40 @@
 ; </editor-fold>
 
 ;; <editor-fold desc="image viewer">
-(defn img-card [id title]
+(defn img-card [name]
   (let [hovered (reagent/atom {:state false})]
     (fn []
       [ui/label
-       :label title
+       :label name
        :style {:width            "100%"
                :margin-top       "-1px"
                :padding-left     "5px"
                :background-color (if (:state @hovered) "lightgray" "transparent")}
        :attr {:on-mouse-over #(reset! hovered {:state true})
               :on-mouse-out  #(reset! hovered {:state false})
-              :on-click      #(re-frame/dispatch [:change-image-selection id])}])))
+              :on-click      #(re-frame/dispatch [:change-image-selection name])}])))
 
 (defn img-chooser []
-  [ui/v-box
-   :max-width "120px"
-   :min-height "100%"
-   :size "1 0 auto"
-   :style {:background-color "#f1f1f1"}
-   :children [[ui/label
-               :style {:font-weight "bold" :padding "5px" :min-width "120px" :background "#D2D2D2"}
-               :label "Select Image"]
-              [img-card 0 "Image 24"]
-              [img-card 1 "Image 25"]
-              [img-card 1 "Image 26"]
-              [img-card 1 "Image 27"]
-              [img-card 1 "Image 28"]
-              [img-card 1 "Image 29"]
-              [img-card 1 "Image 30"]
-              [img-card 1 "Image 31"]]])
+  (let [image-names @(re-frame/subscribe [:image-names])]
+    [ui/v-box
+     :max-width "120px"
+     :min-height "100%"
+     :size "1 0 auto"
+     :style {:background-color "#f1f1f1"}
+     :children [[ui/label
+                 :style {:font-weight "bold" :padding "5px" :min-width "120px" :background "#D2D2D2"}
+                 :label "Select Image"]
+                (for [name image-names]
+                  [img-card name])]]))
 
 
 (defn img-display []
-  (let [image-data (re-frame/subscribe [:cubesat-image])]
-    (when @image-data
-      (print @image-data)
-      [:img {:src (str "data:image/jpeg;base64," (:data @image-data))}])))
+  (let [image-data @(re-frame/subscribe [:cubesat-image])]
+    (when image-data
+      (print image-data)
+      [:img {:src (str "data:image/jpeg;base64, " (:base64 image-data))
+             :style {:width "100%"
+                     :height "100%"}}])))
 
 (defn image-viewer []
   [widget-card

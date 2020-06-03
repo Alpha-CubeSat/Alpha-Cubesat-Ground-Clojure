@@ -81,7 +81,8 @@
   :login-success
   (fn [{:keys [db]} [_ {token :token}]]
     (js/console.log (str token " authenticated successfully"))
-    {:db (assoc-in db [:control-auth :token] token)}))
+    {:db       (assoc-in db [:control-auth :token] token)
+     :dispatch [:req-recent-images]}))
 
 (re-frame/reg-event-fx
   :login-failure
@@ -91,23 +92,37 @@
 
 (re-frame/reg-event-fx
   :change-image-selection
-  (fn [{:keys [db]} [_ selected-id]]
-    {:http-xhrio {:method :get
-                  :uri    (str "api/cubesat/img/recent/" selected-id)
-                  :response-format (http/ring-response-format)
+  (fn [{:keys [db]} [_ selected-name]]
+    {:http-xhrio {:method          :get
+                  :uri             (str "api/cubesat/img/" selected-name)
+                  :response-format (http/json-response-format {:keywords? true})
                   :headers         {:authorization (token (get-in db [:control-auth :token]))}
-                  :on-success [:image-success selected-id]
-                  :on-failure [:image-failure]}}))
+                  :on-success      [:image-success]
+                  :on-failure      [:image-failure]}}))
 
 (re-frame/reg-event-fx
   :image-success
-  (fn [{:keys [db]} [_ selected-id resp]]
-    (js/console.log (str token " image successfully??" resp))
-    {:db (assoc-in db [:cs-image] {:id   selected-id
-                                   :data (js/btoa (js/decodeURI (js/encodeURIComponent (:body resp))))})}))
+  (fn [{:keys [db]} [_ body]]
+    {:db (assoc db :cs-image body)}))
 
 (re-frame/reg-event-fx
   :image-failure
   (fn [_ _]
     (js/console.log "image failed??")
     nil))
+
+(re-frame/reg-event-fx
+  :req-recent-images
+  (fn [{:keys [db]} _]
+    {:http-xhrio {:method          :get
+                  :uri             "api/cubesat/img/recent/list"
+                  :params          {:count 5}
+                  :response-format (http/json-response-format {:keywords? true})
+                  :headers         {:authorization (token (get-in db [:control-auth :token]))}
+                  :on-success      [:recent-image-success]}}))
+
+(re-frame/reg-event-fx
+  :recent-image-success
+  (fn [{:keys [db]} [_ body]]
+    (println body)
+    {:db (assoc db :cs-images body)}))

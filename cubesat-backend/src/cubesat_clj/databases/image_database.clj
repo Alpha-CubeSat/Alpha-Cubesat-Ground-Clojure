@@ -82,3 +82,8 @@
   "Gets the most recent complete image"
   []
   (first (get-recent-images 1)))
+
+
+(defn get-image-by-name [name]
+  (let [path (str (get-root-path) "/img/" name)]
+    (clojure.java.io/file path)))

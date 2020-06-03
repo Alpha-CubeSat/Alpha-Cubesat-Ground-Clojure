@@ -32,3 +32,8 @@
   :cubesat-image
   (fn [db v]
     (:cs-image db)))
+
+(re-frame.core/reg-sub
+  :image-names
+  (fn [db v]
+    (:cs-images db)))

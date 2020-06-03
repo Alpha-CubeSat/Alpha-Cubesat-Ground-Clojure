@@ -15,6 +15,7 @@
             [cubesat-clj.auth.auth-handler :as auth]
             [cubesat-clj.auth.auth-protocol :as auth-data]
             [cubesat-clj.config :as cfg]
+            [cubesat-clj.telemetry.image-handler :as images]
             [ring.util.http-response :as http])
   (:import (java.io File InputStreamReader ByteArrayInputStream InputStream)
            (java.nio.charset Charset)))
@@ -42,12 +43,12 @@
       {:ui   "/api"
        :spec "/api/swagger.json"
        :data {:basePath base
-              :info {:title       "Cubesat Ground"
-                     :description "Alpha Cubesat Ground System"}
-              :tags [{:name "Debug", :description "Miscellaneous requests for debugging/sanity checks"}
-                     {:name "Auth", :description "Login endpoint"}
-                     {:name "API", :description "Satellite control/data API"}
-                     {:name "Telemetry", :description "Rockblock web services telemetry endpoint"}]}})))
+              :info     {:title       "Cubesat Ground"
+                         :description "Alpha Cubesat Ground System"}
+              :tags     [{:name "Debug", :description "Miscellaneous requests for debugging/sanity checks"}
+                         {:name "Auth", :description "Login endpoint"}
+                         {:name "API", :description "Satellite control/data API"}
+                         {:name "Telemetry", :description "Rockblock web services telemetry endpoint"}]}})))
 
 (def app
   (api
@@ -59,6 +60,7 @@
      :swagger    (make-docs)}
 
     (context "/api" []
+
 
       (context "/debug" []
         :tags ["Debug"]
@@ -75,6 +77,7 @@
           (do (println "Echo: " body)
               (ok body))))
 
+
       (context "/auth" []
         :tags ["Auth"]
 
@@ -83,6 +86,7 @@
           :summary "Authenticate to get a token for api access"
           :body [credentials auth-data/LoginRequest]
           (auth/handle-login credentials)))
+
 
       (context "/rockblock" []
         :tags ["RockBlock"]
@@ -95,35 +99,25 @@
           :body [report downlink/RockblockReport]
           (telemetry/handle-report! report)))
 
+
       (context "/cubesat" []
         :tags ["Cubesat"]
 
-        (GET "/img/recent" []
-          :summary "Returns the most recent ttl data fully received by ground"
-          :return File
+        (GET "/img/:name" []
+          :summary "Returns the ttl file with the given name if it exists"
+          :return images/ImageData
           :middleware [auth/wrap-auth]
           :header-params [authorization :- s/Str]
-          :produces ["image/jpeg"]
-          (-> (img/get-most-recent)
-              (io/input-stream)
-              (ok)
-              (header "Content-Type" "image/jpeg")))
+          :path-params [name :- s/Str]
+          (images/handle-image-request name))
 
-        (GET "/img/recent/:id" []
-          :summary "Returns the n'th most recent ttl data if it exists"
-          :return File
+        (GET "/img/recent/list" []
+          :summary "Returns a list of names of recently received ttl files"
+          :return images/ImageNames
           :middleware [auth/wrap-auth]
           :header-params [authorization :- s/Str]
-          :path-params [id :- s/Int]
-          :produces ["image/jpeg"]
-          (try
-            (-> (img/get-recent-images (inc id))
-                (nth id)
-                (io/input-stream)
-                (ok)
-                (header "Content-Type" "image/jpeg"))
-            (catch Exception e
-              (http/bad-request))))
+          :query-params [count :- s/Int]
+          (images/handle-get-image-list count))
 
         (POST "/control" []
           :return {:response uplink/CommandResponse}

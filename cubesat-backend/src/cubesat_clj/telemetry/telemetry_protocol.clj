@@ -105,7 +105,7 @@
 
 
 (defn- read-opcode
-  "Reads the opcode of an incoming packet. If empty packet is received, returns ::empry-packet instead"
+  "Reads the opcode of an incoming packet. If empty packet is received, returns ::empty-packet instead"
   [packet]
   (if (= (reader/remaining packet) 0)
     ::empty-packet
@@ -174,8 +174,7 @@
      :imu-temp ::reader/uint8
      :temp ::reader/uint8
      :solar-current ::reader/uint8
-     :battery ::reader/uint8
-     :placeholder ::reader/uint8]))
+     :battery ::reader/uint8]))
 
 
 (defmethod read-packet-data ::special-report

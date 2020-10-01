@@ -85,6 +85,35 @@
 
 ;;------------------------------- CUBESAT DATA -------------------------------------------------------------------------
 
+(defn- map-range
+  "Recreation of Arduino map() function used in flight code in order to convert imu data to correct imu values.
+  https://www.arduino.cc/reference/en/language/functions/math/map/"
+  [x in-min in-max out-min out-max]
+  (+ out-min
+     (* (/ (- out-max out-min)
+           (- in-max in-min))
+        (- x in-min))))
+
+
+(defn- compute-imu-values
+  "Computes correct IMU readings from IMU data read from a packet. Returns map with the correct values for IMU data,
+  with keys named by: :<key>-value"
+  [{:keys [msh-mag msh-gyro msh-acc
+           x-mag y-mag z-mag
+           x-gyro y-gyro z-gyro
+           x-accel y-accel z-accel] :as cubesat-data}]
+  (assoc cubesat-data
+    :x-mag-value (map-range (float x-mag) 0 255 (- msh-mag) msh-mag)
+    :y-mag-value (map-range (float y-mag) 0 255 (- msh-mag) msh-mag)
+    :z-mag-value (map-range (float z-mag) 0 255 (- msh-mag) msh-mag)
+    :x-gyro-value (map-range (float x-gyro) 0 255 (- msh-gyro) msh-gyro)
+    :y-gyro-value (map-range (float y-gyro) 0 255 (- msh-gyro) msh-gyro)
+    :z-gyro-value (map-range (float z-gyro) 0 255 (- msh-gyro) msh-gyro)
+    :x-accel-value (map-range (float x-accel) 0 255 (- msh-acc) msh-acc)
+    :y-accel-value (map-range (float y-accel) 0 255 (- msh-acc) msh-acc)
+    :z-accel-value (map-range (float z-accel) 0 255 (- msh-acc) msh-acc)))
+
+
 (def ^:const opcodes
   "Packet opcodes for cubesat (see Alpha documentation for specification)"
   {21  ::normal-report
@@ -137,89 +166,92 @@
 
 (defmethod read-packet-data ::imu
   [[_ packet]]
-  (reader/read-structure
-    packet
-    [:msh-mag ::reader/uint8
-     :msh-gyro ::reader/uint8
-     :msh-acc ::reader/uint8
-     :x-mag ::reader/uint8
-     :y-mag ::reader/uint8
-     :z-mag ::reader/uint8
-     :x-gyro ::reader/uint8
-     :y-gyro ::reader/uint8
-     :z-gyro ::reader/uint8
-     :x-accel ::reader/uint8
-     :y-accel ::reader/uint8
-     :z-accel ::reader/uint8
-     :imu-temp ::reader/uint8
-     :placeholder ::reader/uint8]))
+  (-> packet
+      (reader/read-structure
+        [:msh-mag ::reader/uint8
+         :msh-gyro ::reader/uint8
+         :msh-acc ::reader/uint8
+         :x-mag ::reader/uint8
+         :y-mag ::reader/uint8
+         :z-mag ::reader/uint8
+         :x-gyro ::reader/uint8
+         :y-gyro ::reader/uint8
+         :z-gyro ::reader/uint8
+         :x-accel ::reader/uint8
+         :y-accel ::reader/uint8
+         :z-accel ::reader/uint8
+         :imu-temp ::reader/uint8
+         :placeholder ::reader/uint8])
+      compute-imu-values))
 
 
 (defmethod read-packet-data ::normal-report
   [[_ packet]]
-  (reader/read-structure
-    packet
-    [:msh-mag ::reader/uint8
-     :msh-gyro ::reader/uint8
-     :msh-acc ::reader/uint8
-     :x-mag ::reader/uint8
-     :y-mag ::reader/uint8
-     :z-mag ::reader/uint8
-     :x-gyro ::reader/uint8
-     :y-gyro ::reader/uint8
-     :z-gyro ::reader/uint8
-     :x-accel ::reader/uint8
-     :y-accel ::reader/uint8
-     :z-accel ::reader/uint8
-     :imu-temp ::reader/uint8
-     :temp ::reader/uint8
-     :solar-current ::reader/uint8
-     :battery ::reader/uint8]))
+  (-> packet
+      (reader/read-structure
+        [:msh-mag ::reader/uint8
+         :msh-gyro ::reader/uint8
+         :msh-acc ::reader/uint8
+         :x-mag ::reader/uint8
+         :y-mag ::reader/uint8
+         :z-mag ::reader/uint8
+         :x-gyro ::reader/uint8
+         :y-gyro ::reader/uint8
+         :z-gyro ::reader/uint8
+         :x-accel ::reader/uint8
+         :y-accel ::reader/uint8
+         :z-accel ::reader/uint8
+         :imu-temp ::reader/uint8
+         :temp ::reader/uint8
+         :solar-current ::reader/uint8
+         :battery ::reader/uint8])
+      compute-imu-values))
 
 
 (defmethod read-packet-data ::special-report
   [[_ packet]]
-  (reader/read-structure
-    packet
-    [:msh-imu-active ::reader/uint8
-     :msh-mag ::reader/uint8
-     :msh-gyro ::reader/uint8
-     :msh-acc ::reader/uint8
-     :x-mag ::reader/uint8
-     :y-mag ::reader/uint8
-     :z-mag ::reader/uint8
-     :x-gyro ::reader/uint8
-     :y-gyro ::reader/uint8
-     :z-gyro ::reader/uint8
-     :x-accel ::reader/uint8
-     :y-accel ::reader/uint8
-     :z-accel ::reader/uint8
-     :msh-mag-log-0 ::reader/uint8
-     :msh-gyro-log-0 ::reader/uint8
-     :msh-accel-log-0 ::reader/uint8
-     :msh-mag-log-1 ::reader/uint8
-     :msh-gyro-log-1 ::reader/uint8
-     :msh-accel-log-1 ::reader/uint8
-     :msh-mag-log-2 ::reader/uint8
-     :msh-gyro-log-2 ::reader/uint8
-     :msh-accel-log-2 ::reader/uint8
-     :imu-temp ::reader/uint8
-     :temp ::reader/uint8
-     :solar-current ::reader/uint8
-     :battery ::reader/uint8
-     :door-button ::reader/uint8
-     :inhibitor-19a ::reader/uint8
-     :inhibitor-10b ::reader/uint8
-     :inhibitor-2 ::reader/uint8
-     :free-hub ::reader/uint8
-     :next-mode ::reader/uint8
-     :downlink-size ::reader/uint8
-     :downlink-period ::reader/uint8
-     :uplink-period ::reader/uint8
-     :mt-queued ::reader/uint8
-     :sbdix-fails ::reader/uint8
-     :low-power-timer ::reader/uint8
-     :placeholder ::reader/uint8]))
+  (-> packet
+      (reader/read-structure
+        [:msh-imu-active ::reader/uint8
+         :msh-mag ::reader/uint8
+         :msh-gyro ::reader/uint8
+         :msh-acc ::reader/uint8
+         :x-mag ::reader/uint8
+         :y-mag ::reader/uint8
+         :z-mag ::reader/uint8
+         :x-gyro ::reader/uint8
+         :y-gyro ::reader/uint8
+         :z-gyro ::reader/uint8
+         :x-accel ::reader/uint8
+         :y-accel ::reader/uint8
+         :z-accel ::reader/uint8
+         :msh-mag-log-0 ::reader/uint8
+         :msh-gyro-log-0 ::reader/uint8
+         :msh-accel-log-0 ::reader/uint8
+         :msh-mag-log-1 ::reader/uint8
+         :msh-gyro-log-1 ::reader/uint8
+         :msh-accel-log-1 ::reader/uint8
+         :msh-mag-log-2 ::reader/uint8
+         :msh-gyro-log-2 ::reader/uint8
+         :msh-accel-log-2 ::reader/uint8
+         :imu-temp ::reader/uint8
+         :temp ::reader/uint8
+         :solar-current ::reader/uint8
+         :battery ::reader/uint8
+         :door-button ::reader/uint8
+         :inhibitor-19a ::reader/uint8
+         :inhibitor-10b ::reader/uint8
+         :inhibitor-2 ::reader/uint8
+         :free-hub ::reader/uint8
+         :next-mode ::reader/uint8
+         :downlink-size ::reader/uint8
+         :downlink-period ::reader/uint8
+         :uplink-period ::reader/uint8
+         :mt-queued ::reader/uint8
+         :sbdix-fails ::reader/uint8
+         :low-power-timer ::reader/uint8
+         :placeholder ::reader/uint8])
+      compute-imu-values))
 
 
 (defmethod read-packet-data ::ack

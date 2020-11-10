@@ -74,8 +74,9 @@
   "Middleware that fixes the date format in data from rockblock web services.
   Rockblock uses YY-MM-DD HH:mm:ss as the date format, despite their documentation claiming to use a more standard
   format: YYYY-MM-DDThh:mm:ssZ. This middleware takes the incoming format and converts it to YYYY-MM-DDThh:mm:ssZ
-  in order to be consistent with rockblock's documentation. It does this by appending '20' to the start of the date
-  string, which means this fix may not work after the year 2100."
+  in order to be consistent with rockblock's own documentation (and common sense).
+  It does this by appending '20' to the start of the date string,
+  which means this fix may not work after the year 2100."
   [handler]
   (fn [request]
     (let [time (get-in request [:body-params :transmit_time])

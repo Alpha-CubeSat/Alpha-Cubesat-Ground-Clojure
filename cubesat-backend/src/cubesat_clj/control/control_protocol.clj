@@ -115,9 +115,3 @@
                            (when (= status "SUCCESS") {:id code}))]
     (println "GOT RESPONSE: " response-map)
     response-map))
-
-
-(defn rb-is-success
-  "Returns if a response from rockblock web services has a successful status code"
-  [rockblock-response]
-  (= :status rockblock-response "OK"))

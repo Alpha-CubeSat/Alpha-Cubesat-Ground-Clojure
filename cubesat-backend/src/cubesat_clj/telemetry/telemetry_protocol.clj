@@ -96,8 +96,8 @@
 
 
 (defn- compute-imu-values
-  "Computes correct IMU readings from IMU data read from a packet. Returns map with the correct values for IMU data,
-  with keys named by: :<key>-value"
+  "Computes correct IMU readings (unknown units for now) from IMU data read from a packet. Returns map with the correct
+  values for IMU data, with keys named by: :<key>-value"
   [{:keys [msh-mag msh-gyro msh-acc
            x-mag y-mag z-mag
            x-gyro y-gyro z-gyro
@@ -113,6 +113,54 @@
     :y-accel-value (map-range (float y-accel) 0 255 (- msh-acc) msh-acc)
     :z-accel-value (map-range (float z-accel) 0 255 (- msh-acc) msh-acc)))
 
+
+(defn- compute-temp-value
+  "Computes correct temperature in degrees Celsius from mapped uint8 sensor reading in a packet.
+  Uses a key named :temp-value for the result"
+  [{:keys [temp] :as cubesat-data}]
+  (let [real-temp (-> temp
+                      float
+                      (map-range 0 255 0 1023)
+                      (* 3.3)
+                      (/ 1024.0)
+                      (- 0.5)
+                      (* 100.0))]
+    (assoc cubesat-data
+      :temp-value real-temp)))
+
+
+(defn- compute-current-value
+  "Computes solar current value in amperes from mapped uint8 sensor reading in a packet.
+  Uses a key named :solar-current-value for the result"
+  [{:keys [solar-current] :as cubesat-data}]
+  (let [msh-voltage-ref 3.3 ; What is this? TODO have the cubesat include it in packet. Placeholder magic number for now
+        msh-rs 0.1 ; What is this? TODO have the cubesat include it in packet. Placeholder magic number for now
+        msh-rl 29.75 ; What is this? TODO have the cubesat include it in packet. Placeholder magic number for now
+        real-current (-> solar-current
+                         float
+                         (map-range 0 255 0 1023)
+                         (* msh-voltage-ref)
+                         (/ 1023.0)
+                         (/ (* msh-rl msh-rs)))]
+    (assoc cubesat-data
+      :solar-current-value real-current)))
+
+(defn- compute-battery-value
+  "Computes battery voltage in volts from mapped uint8 sensor reading in a packet.
+  Uses a key named :battery-voltage-value for the result"
+  [{:keys [battery] :as cubesat-data}]
+  (let [msh-voltage-ref 3.3
+        r1 470
+        r2 1000
+        real-voltage (-> battery
+                         float
+                         (map-range 0 255 0 1023)
+                         (* msh-voltage-ref)
+                         (/ 1024.0)
+                         (* (+ r1 r2))
+                         (/ r2))]
+    (assoc cubesat-data
+      :battery-voltage-value real-voltage)))
 
 (def ^:const opcodes
   "Packet opcodes for cubesat (see Alpha documentation for specification)"
@@ -205,7 +253,10 @@
          :temp ::reader/uint8
          :solar-current ::reader/uint8
          :battery ::reader/uint8])
-      compute-imu-values))
+      compute-imu-values
+      compute-temp-value
+      compute-current-value
+      compute-battery-value))
 
 
 (defmethod read-packet-data ::special-report
@@ -249,9 +300,11 @@
          :uplink-period ::reader/uint8
          :mt-queued ::reader/uint8
          :sbdix-fails ::reader/uint8
-         :low-power-timer ::reader/uint8
-         :placeholder ::reader/uint8])
-      compute-imu-values))
+         :low-power-timer ::reader/uint8])
+      compute-imu-values
+      compute-temp-value
+      compute-current-value
+      compute-battery-value))
 
 
 (defmethod read-packet-data ::ack

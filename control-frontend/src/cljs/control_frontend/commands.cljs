@@ -24,25 +24,25 @@
   acs
   ::acs
   "ACS"
-  [change-sr request-report request-imu-data])
+  [request-imu-data])
 
 (defcategory
   battery
   ::battery
   "Battery"
-  [change-sr request-report request-imu-data])
+  [])
 
 (defcategory
   mission
   ::mission
   "Mission Control"
-  [change-sr request-report request-imu-data])
+  [request-report request-imu-data])
 
 (defcategory
   faults
   ::faults
   "Faults"
-  [change-sr request-report request-imu-data])
+  [])
 
 (def ^:const all-commands
   [acs

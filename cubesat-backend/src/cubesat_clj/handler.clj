@@ -85,7 +85,7 @@
         :tags ["Auth"]
 
         (POST "/login" []
-          :return {:token s/Str}
+          :return auth-data/AuthResult
           :summary "Authenticate to get a token for api access"
           :body [credentials auth-data/LoginRequest]
           (auth/handle-login credentials)))

@@ -12,7 +12,8 @@
   (let [{:keys [username password]} credentials
         token (auth/try-authenticate-user username password)]
     (if token
-      (http/ok {:token token})
+      (http/ok {:token token
+                :username username})
       (http/bad-request {:error "Invalid user or incorrect password"}))))
 
 

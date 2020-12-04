@@ -1,12 +1,12 @@
 (ns control-frontend.subs
   (:require
-   [re-frame.core :as re-frame]
-   [control-frontend.commands :as commands]))
+    [re-frame.core :as re-frame]
+    [control-frontend.commands :as commands]))
 
 (re-frame/reg-sub
- ::name
- (fn [db]
-   (:name db)))
+  ::name
+  (fn [db]
+    (:name db)))
 
 (re-frame.core/reg-sub
   :command-filter
@@ -21,7 +21,13 @@
 (re-frame.core/reg-sub
   :auth-token
   (fn [db v]
-    (-> db :control-auth :token)))
+    {:token              (-> db :control-auth :token)
+     :username           (-> db :control-auth :username)}))
+
+(re-frame.core/reg-sub
+  :auth-error
+  (fn [db v]
+    (-> db :control-auth :auth-error-message)))
 
 (re-frame.core/reg-sub
   :command-history

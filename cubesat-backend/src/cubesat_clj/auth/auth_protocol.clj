@@ -7,6 +7,11 @@
             [buddy.sign.jwt :as jwt]))
 
 
+(s/defschema AuthResult
+  {:token s/Str
+   :username s/Str})
+
+
 (s/defschema LoginRequest
   "Format for login request."
   {:username s/Str

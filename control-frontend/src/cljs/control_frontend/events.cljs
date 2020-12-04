@@ -77,16 +77,17 @@
 
 (re-frame/reg-event-fx
   :login-success
-  (fn [{:keys [db]} [_ {token :token}]]
+  (fn [{:keys [db]} [_ {token :token username :username}]]
     (js/console.log (str token " authenticated successfully"))
-    {:db       (assoc-in db [:control-auth :token] token)
+    {:db       (-> db
+                   (assoc-in [:control-auth :token] token)
+                   (assoc-in [:control-auth :username] username))
      :dispatch [:req-recent-images]}))
 
 (re-frame/reg-event-fx
   :login-failure
-  (fn [_ _]
-    (js/console.log "authentication failed")
-    nil))
+  (fn [{:keys [db]} _]
+    {:db (-> db (assoc-in [:control-auth :auth-error-message] "Incorrect username or password."))}))
 
 (re-frame/reg-event-fx
   :change-image-selection

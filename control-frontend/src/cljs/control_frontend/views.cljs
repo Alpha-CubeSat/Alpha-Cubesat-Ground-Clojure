@@ -235,7 +235,7 @@
               :on-mouse-out  #(reset! hover false)}
        :child [:img {:src image-uri}]])))
 
-(defn top-bar []
+(defn top-bar [username]
   [ui/h-box
    :height "50px"
    :style {:background-color "#2b2c2e"}
@@ -249,14 +249,14 @@
                        :padding-right "5px"
                        :font-size     15
                        :color         "#B5B5B5"}
-               :label "Max "
-               ]
+               :label username]
               [top-bar-image-button "user1.png"]]])
 ; </editor-fold>
 
 ; <editor-fold desc="login popup">
 (defn login-panel []
-  (let [response (reagent/atom nil)]
+  (let [error-msg (re-frame/subscribe [:auth-error])
+        response (reagent/atom nil)]
     (fn []
       [ui/modal-panel
        :backdrop-color "grey"
@@ -303,6 +303,9 @@
                            :attr {:id "pf-password" :type "password"}
                            :on-change #(swap! response assoc :password %)]
                           [ui/line]
+                          [ui/label
+                           :style {:color "red"}
+                           :label @error-msg]
                           [ui/button
                            :label "Sign in"
                            :disabled? (not
@@ -445,7 +448,7 @@
     [ui/v-box
      :max-height "100vh"
      :height "100vh"
-     :children [[top-bar]
+     :children [[top-bar (:username @authentication)]
                 [main-container]
-                (when-not @authentication
+                (when-not (:token @authentication)
                   [login-panel])]]))

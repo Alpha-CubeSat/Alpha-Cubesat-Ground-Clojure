@@ -1,4 +1,4 @@
-(ns cubesat-clj.telemetry.telemetry-protocol
+(ns cubesat-clj.telemetry.cubesat-telemetry
   "Specifies/parses formats used by the RockBlock API and cubesat.
   These formats are described in the RockBlock web services docs at:
   https://docs.rock7.com/reference#push-api
@@ -10,80 +10,49 @@
             [cheshire.core :as json]
             [cubesat-clj.util.binary.byte-buffer :as buffer]
             [cubesat-clj.util.binary.binary-reader :as reader]
-            [cubesat-clj.util.binary.hex-string :as hex]))
+            [cubesat-clj.util.binary.hex-string :as hex]
+            [cubesat-clj.config :as cfg]
+            [cubesat-clj.databases.elasticsearch :as es]
+            [cubesat-clj.databases.image-database :as img]
+            [cubesat-clj.telemetry.rockblock-telemetry :as rb]))
 
 
-;;---------------------------- ROCKBLOCK DATA --------------------------------------------------------------------------
-
-(s/defschema RockblockReport
-  "A report submitted by the rockblock API. Contains main fields with satellite
-  data and information, along with optionally sent fields, and some unknown ones
-  that may not be consistent with the rockblock docs.
-
-  The 'data' field contains the hex-encoded binary data sent by the satellite."
-  ; TODO fix how the jwt data is all strings, which breaks verification
-  {;(s/optional-key :id)                s/Str
-   ;(s/optional-key :transport)         s/Str
-   ;:imei                               s/Str
-   ;:device_type                        s/Str
-   ;:serial                             s/Int
-   ;:momsn                              s/Int
-   ;:transmit_time                      s/Inst
-   ;:data                               s/Str
-   ;(s/optional-key :message)           s/Str
-   ;(s/optional-key :at)                s/Inst
-   ;:JWT                                s/Str
-   ;:iridium_longitude                  s/Num
-   ;:iridium_latitude                   s/Num
-   ;(s/optional-key :cep)               s/Int
-   ;(s/optional-key :trigger)           s/Str
-   ;(s/optional-key :source)            s/Str
-   ;(s/optional-key :lat)               s/Num
-   ;(s/optional-key :lon)               s/Num
-   ;(s/optional-key :sog)               s/Num
-   ;(s/optional-key :cog)               s/Num
-   ;(s/optional-key :alt)               s/Num
-   ;(s/optional-key :temp)              s/Num
-   ;(s/optional-key :battery)           s/Num
-   ;(s/optional-key :power)             s/Bool
-   ;(s/optional-key :ack_request)       s/Int
-   ;(s/optional-key :message_ack)       s/Int
-   ;(s/optional-key :alert)             s/Bool
-   ;(s/optional-key :waypoint)          s/Str
-   ;(s/optional-key :appMessageAddress) [s/Str]
-   ;(s/optional-key :appMessageContent) s/Str
-   ;(s/optional-key :beacons)           [s/Str]
-   s/Any s/Any})
+(def ^:const opcodes
+  "Packet opcodes for cubesat (see Alpha documentation for specification)"
+  {21  ::normal-report
+   22  ::normal-report-faults
+   34  ::special-report
+   42  ::ttl
+   ;69 ::special-report                                      ;deprecated? Use the 7x opcodes for specific reports
+   ;70 ::imu
+   71  ::imu
+   72  ::temperature
+   73  ::inhibs
+   74  ::rbf
+   75  ::current-sensor
+   76  ::battery-voltage
+   77  ::sd-card
+   78  ::button
+   255 ::ack})
 
 
-(def rockblock-web-pk
-  "Public key provided for JWT verification by rockblock web services documentation"
-  (keys/str->public-key
-    "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAlaWAVJfNWC4XfnRx96p9cztBcdQV6l8aKmzAlZdpEcQR6MSPzlgvihaUHNJgKm8t5ShR3jcDXIOI7er30cIN4/9aVFMe0LWZClUGgCSLc3rrMD4FzgOJ4ibD8scVyER/sirRzf5/dswJedEiMte1ElMQy2M6IWBACry9u12kIqG0HrhaQOzc6Tr8pHUWTKft3xwGpxCkV+K1N+9HCKFccbwb8okRP6FFAMm5sBbw4yAu39IVvcSL43Tucaa79FzOmfGs5mMvQfvO1ua7cOLKfAwkhxEjirC0/RYX7Wio5yL6jmykAHJqFG2HT0uyjjrQWMtoGgwv9cIcI7xbsDX6owIDAQAB\n-----END PUBLIC KEY-----"))
+(defn save-cubesat-data
+  "Saves a cubesat report to elasticsearch"
+  [data]
+  (let [index (cfg/cubesat-db-index (cfg/get-config))]
+    (es/index! index es/daily-index-strategy data)))
 
 
-(defn verify-rockblock-request
-  "Uses jwt to verify data sent by rockblock web services. Returns a copy of the data if valid,
-  nil if invalid/corrupt"
-  [rockblock-report]
-  (try (let [jwt (:JWT rockblock-report)
-             unsigned-data (jwt/unsign jwt rockblock-web-pk {:alg :rs256})
-             edn-data (clojure.walk/keywordize-keys unsigned-data)] ;Have to convert the decoded json to edn, even though original, unencoded, request was in edn
-         (assoc edn-data :JWT jwt))
-       (catch Exception e
-         (do (str "Caught exception unsigning rockblock data: " (.printStackTrace e))
-             nil))))
+(defn save-ttl-data
+  "Process image fragment data sent by cubesat. Image comes over several fragments as
+  rockblock only supports so much protocol. Image 'fragments' are then assembled into full images
+  when fully collected, and saved into the image database"
+  [ttl-data]
+  (let [{:keys [image-serial-number image-fragment-number image-max-fragments image-data]} ttl-data]
+    (save-cubesat-data ttl-data)
+    (img/save-fragment image-serial-number image-fragment-number image-data)
+    (img/try-save-image image-serial-number image-max-fragments)))
 
-
-(defn- get-cubesat-message-binary
-  "Gets the string encoded binary data sent by the cubesat as a java nio ByteBuffer"
-  [rockblock-report]
-  (-> (:data rockblock-report)
-      (hex/hex-str-to-bytes)
-      (buffer/from-byte-array)))
-
-
-;;------------------------------- CUBESAT DATA -------------------------------------------------------------------------
 
 (defn- map-range
   "Recreation of Arduino map() function used in flight code in order to convert imu data to correct imu values.
@@ -145,6 +114,7 @@
     (assoc cubesat-data
       :solar-current-value real-current)))
 
+
 (defn- compute-battery-value
   "Computes battery voltage in volts from mapped uint8 sensor reading in a packet.
   Uses a key named :battery-voltage-value for the result"
@@ -161,24 +131,6 @@
                          (/ r2))]
     (assoc cubesat-data
       :battery-voltage-value real-voltage)))
-
-(def ^:const opcodes
-  "Packet opcodes for cubesat (see Alpha documentation for specification)"
-  {21  ::normal-report
-   22  ::normal-report-faults
-   34  ::special-report
-   42  ::ttl
-   ;69 ::special-report                                      ;deprecated? Use the 7x opcodes for specific reports
-   ;70 ::imu
-   71  ::imu
-   72  ::temperature
-   73  ::inhibs
-   74  ::rbf
-   75  ::current-sensor
-   76  ::battery-voltage
-   77  ::sd-card
-   78  ::button
-   255 ::ack})
 
 
 (defn- read-opcode
@@ -336,7 +288,7 @@
   if the packet is empty or some issue occurred. If the data is successfully read, the opcode is returned in the
   result map as :telemetry-report-type. Otherwise :telemetry-report-type is set to ::error"
   [rockblock-report]
-  (let [packet (get-cubesat-message-binary rockblock-report)
+  (let [packet (rb/get-cubesat-message-binary rockblock-report)
         op (read-opcode packet)
         meta (report-metadata rockblock-report)
         result (if (= op ::empty-packet)

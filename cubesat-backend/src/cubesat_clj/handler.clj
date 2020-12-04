@@ -4,7 +4,7 @@
   (:require [compojure.api.sweet :refer :all]
             [compojure.api.exception :as ex]
             [ring.util.http-response :refer :all]
-            [cubesat-clj.telemetry.telemetry-protocol :as downlink]
+            [cubesat-clj.telemetry.rockblock-telemetry :as downlink]
             [cubesat-clj.telemetry.telemetry-handler :as telemetry]
             [cubesat-clj.databases.image-database :as img]
             [schema.core :as s]
@@ -94,8 +94,8 @@
         (POST "/telemetry" []
           :return nil
           :summary "Receive data from rockblock web services"
-          :middleware [telemetry/verify-rockblock-data
-                       telemetry/fix-rockblock-date]
+          :middleware [telemetry/verify-rockblock-data-mw
+                       telemetry/fix-rockblock-date-mw]
           :body [report downlink/RockblockReport]
           (telemetry/handle-report! report)))
 

@@ -16,22 +16,25 @@
             [cubesat-clj.auth.auth-protocol :as auth-data]
             [cubesat-clj.config :as cfg]
             [cubesat-clj.telemetry.image-handler :as images]
-            [ring.util.http-response :as http])
+            [ring.util.http-response :as http]
+            [cubesat-clj.databases.elasticsearch :as es])
   (:import (java.io File InputStreamReader ByteArrayInputStream InputStream)
-           (java.nio.charset Charset)))
+           (java.nio.charset Charset)
+           (java.util Date)))
 
 
 (defn- log-error
   "Since rockblock sends weird requests, and then doesn't tell you the responses it gets,
   we override compojure-api's error handling to log everything"
-  [f type]
+  [f type http-message]
   (fn [^Exception e data request]
     (do (println "[DEBUG] Error: ")
         (println (.getMessage e))
         (.printStackTrace e)
-        ;(println "DATA: " data)
-        ;(println "REQUEST: " request)
-        (f {:message (.getMessage e), :type type}))))
+        (let [result {:message (.getMessage e), :type type :timestamp (Date.)}]
+          (es/index! "log" es/daily-index-strategy result)
+          (f (assoc result :message http-message))))))
+
 
 (defn- make-docs []
   "If configured to do so, returns a map containing swagger UI spec"
@@ -53,10 +56,10 @@
 (def app
   (api
     {:exceptions {:handlers
-                  {::ex/request-parsing     (log-error response/internal-server-error :unknown)
-                   ::ex/request-validation  (log-error response/internal-server-error :unknown)
-                   ::ex/response-validation (log-error response/internal-server-error :unknown)
-                   ::ex/default             (log-error response/internal-server-error :unknown)}}
+                  {::ex/request-parsing     (log-error response/bad-request :unknown "Invalid Request Format")
+                   ::ex/request-validation  (log-error response/bad-request :unknown "Request Did Not Match Schema")
+                   ::ex/response-validation (log-error response/internal-server-error :unknown "Response Validation Error")
+                   ::ex/default             (log-error response/internal-server-error :unknown "Unknown Error")}}
      :swagger    (make-docs)}
 
     (context "/api" []
@@ -111,7 +114,7 @@
           :path-params [name :- s/Str]
           (images/handle-image-request name))
 
-        (GET "/img/recent/list" []
+        (GET "/img/recent" []
           :summary "Returns a list of names of recently received ttl files"
           :return images/ImageNames
           :middleware [auth/wrap-auth]
@@ -119,7 +122,7 @@
           :query-params [count :- s/Int]
           (images/handle-get-image-list count))
 
-        (POST "/control" []
+        (POST "/command" []
           :return {:response uplink/CommandResponse}
           :summary "Process a command to be sent to cubesat."
           :middleware [auth/wrap-auth]

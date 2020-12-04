@@ -357,11 +357,17 @@
                        :label message]]]])
 
 
+(def uniqkey (atom 0))
+
+(defn gen-key []
+  (let [res (swap! uniqkey inc)]
+    res))
+
 (defn command-history-table [commands]
   [ui/v-box
    :children [[table-header]
               (for [{:keys [status name submitted message]} commands]
-                ^{:key submitted} [row status name submitted message])]])
+                ^{:key (gen-key)} [row status name submitted message])]])
 
 
 (defn command-log []

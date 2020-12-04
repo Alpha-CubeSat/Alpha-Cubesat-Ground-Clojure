@@ -29,7 +29,7 @@
   :submit-command
   (fn [{:keys [db]} [_ type fields]]
     {:http-xhrio {:method          :post
-                  :uri             "/api/cubesat/control"
+                  :uri             "/api/cubesat/command"
                   :headers         {:authorization (token (get-in db [:control-auth :token]))}
                   :params          {:type   type
                                     :fields fields}
@@ -47,9 +47,8 @@
                :name      type
                :submitted (str (time/now))
                :message   ""}
-          new-history (conj history log)
-          truncated (if (> (count new-history) 15) (pop new-history) new-history)]
-      {:db (assoc-in db [:commands :history] truncated)})))
+          new-history (conj history log)]
+      {:db (assoc-in db [:commands :history] new-history)})))
 
 (re-frame/reg-event-fx
   :command-submit-fail
@@ -61,9 +60,8 @@
                :submitted (str (time/now))
                :message   (str "[" (:status resp) "] "
                                (-> resp :response :message))}
-          new-history (conj history log)
-          truncated (if (> (count new-history) 15) (pop new-history) new-history)]
-      {:db (assoc-in db [:commands :history] truncated)})))
+          new-history (conj history log)]
+      {:db (assoc-in db [:commands :history] new-history)})))
 
 (re-frame/reg-event-fx
   :login-submitted
@@ -115,7 +113,7 @@
   :req-recent-images
   (fn [{:keys [db]} _]
     {:http-xhrio {:method          :get
-                  :uri             "api/cubesat/img/recent/list"
+                  :uri             "api/cubesat/img/recent"
                   :params          {:count 5}
                   :response-format (http/json-response-format {:keywords? true})
                   :headers         {:authorization (token (get-in db [:control-auth :token]))}

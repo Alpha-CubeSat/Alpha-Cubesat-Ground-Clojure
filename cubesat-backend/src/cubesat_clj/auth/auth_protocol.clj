@@ -4,10 +4,12 @@
             [buddy.auth.backends :as backends]
             [cubesat-clj.config :as cfg]
             [cubesat-clj.auth.user-store :as usr]
-            [buddy.sign.jwt :as jwt]))
+            [buddy.sign.jwt :as jwt]
+            [clj-time.core :as time]))
 
 
 (s/defschema AuthResult
+  "Result Schema for login request."
   {:token s/Str
    :username s/Str})
 
@@ -32,5 +34,5 @@
   (if (usr/check-credentials user pass)
     (let [config (cfg/get-config)
           secret (cfg/jws-secret config)]
-      (jwt/sign {:user user} secret))
+      (jwt/sign {:user user :exp (time/plus (time/now) (time/hours 24))} secret))
     nil))

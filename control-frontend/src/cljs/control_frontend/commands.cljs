@@ -36,7 +36,7 @@
   mission
   ::mission
   "Mission Control"
-  [request-report request-imu-data])
+  [request-report change-sr])
 
 (defcategory
   faults

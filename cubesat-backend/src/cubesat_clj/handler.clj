@@ -106,14 +106,6 @@
       (context "/cubesat" []
         :tags ["Cubesat"]
 
-        (GET "/img/:name" []
-          :summary "Returns the ttl file with the given name if it exists"
-          :return images/ImageData
-          :middleware [auth/wrap-auth]
-          :header-params [authorization :- s/Str]
-          :path-params [name :- s/Str]
-          (images/handle-image-request name))
-
         (GET "/img/recent" []
           :summary "Returns a list of names of recently received ttl files"
           :return images/ImageNames
@@ -121,6 +113,14 @@
           :header-params [authorization :- s/Str]
           :query-params [count :- s/Int]
           (images/handle-get-image-list count))
+
+        (GET "/img/:name" []
+          :summary "Returns the ttl file with the given name if it exists"
+          :return images/ImageData
+          :middleware [auth/wrap-auth]
+          :header-params [authorization :- s/Str]
+          :path-params [name :- s/Str]
+          (images/handle-image-request name))
 
         (POST "/command" []
           :return {:response uplink/CommandResponse}

@@ -10,7 +10,7 @@
                  [buddy/buddy-hashers "1.4.0"]]
   :ring {:handler cubesat-clj.handler/app}
   :uberjar-name "cubesat.jar"
-  :aot :all
   :profiles {:dev {:dependencies [[javax.servlet/javax.servlet-api "3.1.0"]]
                    :plugins      [[lein-ring "0.12.5"]
-                                  [lein-codox "0.10.7"]]}})
+                                  [lein-codox "0.10.7"]]}
+             :uberjar {:aot :all}})

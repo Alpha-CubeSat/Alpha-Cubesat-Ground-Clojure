@@ -69,6 +69,7 @@
   (let [image-files (rest (->> (str (get-root-path) "/img")
                                clojure.java.io/file
                                file-seq))]
+    (println image-files)
     (sort-numeric-files image-files ".jpeg")))
 
 

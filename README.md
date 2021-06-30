@@ -22,10 +22,10 @@ version of the ground software in C++ (https://github.com/AlphaCornell/AlphaGrou
 
 ## Dependencies
 - Java version >= 8
-- Leiningen, a build tool for Clojure. https://leiningen.org/ has instructions for installation.
+- Leiningen, a build tool for Clojure. https://leiningen.org/ has instructions for installation. Another helpful link: https://purelyfunctional.tv/guide/how-to-install-clojure/
 - NPM, javascript package manager: https://www.npmjs.com/get-npm
-- React: `npm install react`
-- ReactDOM: `npm install react-dom`
+- React: `npm install react` (may need to use `sudo npm install react`)
+- ReactDOM: `npm install react-dom` (may need to use `sudo npm install react-dom`)
 - All other dependencies (such as Clojure/script libraries) will be handled by Leiningen when building
 
 ## Setting up Alpha Ground Station for Development, Running in Development Mode
@@ -54,7 +54,7 @@ if 3000 is taken, and print the one it listens on to the console. The server wil
 Navigate to `control-frontend`. There is not much configuration that is necessary, but the front end UI is served by its own server. As this UI will attempt to make requests against the actual backend API, the frontend development server will not be able to handle them. Thus, this frontend server is configured in `shadow-cljs.edn` to reroute (proxy) any requests it cannot satisfy to the address of the actual backend (which should be running if you completed step 4). By default, this attempts to reroute to `localhost:3000`, as this is the default address for the Alpha backend. But if you are using a different one, you will need to change `:proxy-url` to point to the right address.
 
 6. **Run the Frontend UI**
-Once configured, run the command `lein dev`. This will boot the server that serves the UI and proxies requests to the real backend. Navigate to the address configured (it will be printed in the terminal, and it is `localhost:8000` by default). Again, frontend code is hotloaded, so leave the UI open as you develop, and changes to the code will be uploaded to the browser and reflected in the UI without the need to refresh the page in the browser or manually rerun/rebuild any code. This is accomplished with shadow-cljs, and you should see a small popup animation in the browser window whenever an update occurs. This will also point out errors if it finds any. The UI will require you to log in. Assuming you haven't changed the config or users file, the default username is `example-user` and the password is `example`.
+Once configured, run the command `lein dev` (make sure the back-end is still running. An easy way to do this run `lein ring server` in one terminal and `lein dev` in another). This will boot the server that serves the UI and proxies requests to the real backend. Navigate to the address configured (it will be printed in the terminal, and it is `localhost:8000` by default). Again, frontend code is hotloaded, so leave the UI open as you develop, and changes to the code will be uploaded to the browser and reflected in the UI without the need to refresh the page in the browser or manually rerun/rebuild any code. This is accomplished with shadow-cljs, and you should see a small popup animation in the browser window whenever an update occurs. This will also point out errors if it finds any. The UI will require you to log in. Assuming you haven't changed the config or users file, the default username is `example-user` and the password is `example`.
 
 
 ## Setting up Alpha Ground Station in Production

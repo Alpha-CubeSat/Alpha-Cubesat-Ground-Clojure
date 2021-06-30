@@ -185,30 +185,69 @@
       compute-imu-values))
 
 
+;; (defmethod read-packet-data ::normal-report
+;;   [[_ packet]]
+;;   (-> packet
+;;       (reader/read-structure
+;;         [:msh-mag ::reader/uint8
+;;          :msh-gyro ::reader/uint8
+;;          :msh-acc ::reader/uint8
+;;          :x-mag ::reader/uint8
+;;          :y-mag ::reader/uint8
+;;          :z-mag ::reader/uint8
+;;          :x-gyro ::reader/uint8
+;;          :y-gyro ::reader/uint8
+;;          :z-gyro ::reader/uint8
+;;          :x-accel ::reader/uint8
+;;          :y-accel ::reader/uint8
+;;          :z-accel ::reader/uint8
+;;          :imu-temp ::reader/uint8
+;;          :temp ::reader/uint8
+;;          :solar-current ::reader/uint8
+;;          :battery ::reader/uint8])
+;;       compute-imu-values
+;;       compute-temp-value
+;;       compute-current-value
+;;       compute-battery-value))
+
 (defmethod read-packet-data ::normal-report
   [[_ packet]]
   (-> packet
       (reader/read-structure
-        [:msh-mag ::reader/uint8
-         :msh-gyro ::reader/uint8
-         :msh-acc ::reader/uint8
+        [:photoresistor-covered ::reader/uint8
+         :door-button-pressed ::reader/uint8
+         :mission-mode ::reader/uint8
+         :fire-burnwire ::reader/uint8
+         :arm-burnwire ::reader/uint8
+         :burnwire-mode ::reader/uint8
+         :burnwire-attempts ::reader/uint8
+         :downlink-period ::reader/uint8
+         :waiting-messages ::reader/uint8
+         :command-to-process ::reader/uint8
          :x-mag ::reader/uint8
          :y-mag ::reader/uint8
          :z-mag ::reader/uint8
          :x-gyro ::reader/uint8
          :y-gyro ::reader/uint8
          :z-gyro ::reader/uint8
-         :x-accel ::reader/uint8
-         :y-accel ::reader/uint8
-         :z-accel ::reader/uint8
-         :imu-temp ::reader/uint8
          :temp ::reader/uint8
+         :temp-mode ::reader/uint8
          :solar-current ::reader/uint8
-         :battery ::reader/uint8])
-      compute-imu-values
-      compute-temp-value
-      compute-current-value
-      compute-battery-value))
+         :in-sun ::reader/uint8
+         :acs-mode ::reader/uint8
+         :battery ::reader/uint8
+         :fault-mode ::reader/uint8
+         :check-mag-x ::reader/uint8
+         :check-mag-y ::reader/uint8
+         :check-mag-z ::reader/uint8
+         :check-gyro-x ::reader/uint8
+         :check-gyro-y ::reader/uint8
+         :check-gyro-z ::reader/uint8
+         :check-temp ::reader/uint8
+         :check-solar ::reader/uint8
+         :check-battery ::reader/uint8
+         :take-photo ::reader/uint8
+         :camera-on ::reader/uint8])))
 
 
 (defmethod read-packet-data ::special-report

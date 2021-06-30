@@ -1,11 +1,11 @@
 (ns control-frontend.views
   (:require
-    [re-frame.core :as re-frame]
-    [re-com.core :as ui]
-    [control-frontend.subs :as subs]
-    [control-frontend.commands :as commands]
-    [reagent.core :as reagent]
-    [ajax.core :as http]))
+   [re-frame.core :as re-frame]
+   [re-com.core :as ui]
+   [control-frontend.subs :as subs]
+   [control-frontend.commands :as commands]
+   [reagent.core :as reagent]
+   [ajax.core :as http]))
 
 ;; <editor-fold desc="common">
 (defn widget-card [{:keys [title content]}]
@@ -309,9 +309,9 @@
                           [ui/button
                            :label "Sign in"
                            :disabled? (not
-                                        (and
-                                          (commands/check-field-nonempty (:username @response))
-                                          (commands/check-field-nonempty (:password @response))))
+                                       (and
+                                        (commands/check-field-nonempty (:username @response))
+                                        (commands/check-field-nonempty (:password @response))))
                            :on-click #(re-frame/dispatch [:login-submitted (:username @response) (:password @response)])
                            :style {:align-self       "flex-end"
                                    :color            "#fff"

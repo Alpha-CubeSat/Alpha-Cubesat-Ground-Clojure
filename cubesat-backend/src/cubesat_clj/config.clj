@@ -72,7 +72,7 @@
   (get-in config [:telemetry :elasticsearch-indices :cubesat]))
 
 (defn control-db-index
-  "Returns hte configured ElasticSearch index base name for control logs"
+  "Returns the configured ElasticSearch index base name for control logs"
   [config]
   (get-in config [:control :elasticsearch-indices :command-log]))
 

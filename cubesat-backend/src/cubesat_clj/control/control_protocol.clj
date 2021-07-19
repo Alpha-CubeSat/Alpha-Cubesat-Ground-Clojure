@@ -45,52 +45,41 @@
   "Endpoint for submitting commands to rockblock"
   "https://core.rock7.com/rockblock/MT")
 
-
-;;TODO the rest of them
-
-
 (def ^:const uplink-opcodes
   "Uplink command opcodes by command type"
-  {:report 3
-   :imu    4
-   :echo   5})
+  {:burnwire-burn-time "0300"
+   :burnwire-arm-time "0400"
+   :rockblock-downlink-period "0500"
+   :request-img-fragment "0600"})
 
-(defn- pad-single-digit
-  "Pads a string with '0's (the character '0', not the number) at the beginning until it is length 2"
+(defn- hexify-arg
+  "Translates decimal number into a hexidecimal string, then pads the string 
+   with '0's at the beginning until it is length 8."
   [st]
-  (let [s (str st)]
-    (if (< (.length s) 2)
+  (let [s (bin/hexify (str st))]
+    (if (< (.length s) 8)
       (recur (str "0" s))
       s)))
 
-(defn- get-no-arg
-  "Since most commands are 0 or 1 argument; a helper function
-  that returns the string representation for a no-argument
-  operation
-
-  Example:
-    (get-no-arg 20)
-    returns the string '20,00!'"
-  [operation]
-  (str (-> operation :type uplink-opcodes pad-single-digit) ",00" "!"))
-
 (defn- parse-single-arg
-  "Since most commands are 0 or 1 argument; a helper function
-  that returns the string representation for a single argument
-  operation
+  "A helper function that returns the string representation for a single 
+   argument operation
 
   Example:
     (parse-single-arg {:type :report :example 50} :example)
     returns the string '01,50!'"
   [operation key]
-  (str (-> operation :type uplink-opcodes pad-single-digit) "," (-> operation :fields key pad-single-digit) "!"))
+  (str (-> operation :type uplink-opcodes) (-> operation :fields key hexify-arg) "0000000"))
+
+(defn- parse-double-arg
+  [operation key1 key2]
+  (str (-> operation :type uplink-opcodes) (-> operation :fields key1 hexify-arg) (-> operation :fields key2 hexify-arg)))
 
 (defn parse-command-args
   "Takes a Command and translates it to a string representation as
   specified in the Alpha documentation"
   [operation]
   (case (:type operation)
-    ;TODO the rest of them
     :mission-mode-low-power    "00000100000000000000"
     :mission-mode-deployment   "00000000000000000000"
     :mission-mode-standby      "00000200000000000000"
@@ -99,36 +88,37 @@
     :burnwire-arm-false        "01000000000000000000"
     :burnwire-fire-true        "02000100000000000000"
     :burnwire-fire-false       "02000000000000000000"
-    :rockblock-downlink-period "04000000000000000000"
-    :request-img-fragment      "05000000000000000000"
-    :take-photo-true           "06000100000000000000"
-    :take-photo-false          "06000000000000000000"
-    :temperature-mode-active   "07000100000000000000"
-    :temperature-mode-inactive "07000000000000000000"
-    :acs-mode-detumbling       "08000200000000000000"
-    :acs-mode-pointing         "08000100000000000000"
-    :acs-mode-off              "08000000000000000000"
-    :fault-mode-active         "09000100000000000000"
-    :fault-mode-inactive       "09000000000000000000"
-    :fault-check-mag-x-true    "F4FF0100000000000000"
-    :fault-check-mag-x-false   "F4FF0000000000000000"
-    :fault-check-mag-y-true    "F5FF0100000000000000"
-    :fault-check-mag-y-false   "F5FF0000000000000000"
-    :fault-check-mag-z-true    "F6FF0100000000000000"
-    :fault-check-mag-z-false   "F5FF0000000000000000"
-    :fault-check-gyro-x-true   "F7FF0100000000000000"
-    :fault-check-gyro-x-false  "F7FF0000000000000000"
-    :fault-check-gyro-y-true   "F8FF0100000000000000"
-    :fault-check-gyro-y-false  "F8FF0000000000000000"
-    :fault-check-gyro-z-true   "F9FF0100000000000000"
-    :fault-check-gyro-z-false  "F9FF0000000000000000"
-    :fault-check-temp-c-true   "FDFF0100000000000000"
-    :fault-check-temp-c-false  "FDFF0000000000000000"
-    :fault-check-solar-true    "FEFF0100000000000000"
-    :fault-check-solar-false   "FEFF0000000000000000"
-    :fault-check-voltage-true  "FFFF0100000000000000"
-    :fault-check-voltage-false "FFFF0000000000000000"
-    ))
+    :burnwire-burn-time        (parse-single-arg operation :burn-time)
+    :burnwire-arm-time         (parse-single-arg operation :arm-time)
+    :rockblock-downlink-period (parse-single-arg operation :downlink-period)
+    :request-img-fragment      (parse-double-arg operation ::img-fragment :camera-number)
+    :take-photo-true           "07000100000000000000"
+    :take-photo-false          "07000000000000000000"
+    :temperature-mode-active   "08000100000000000000"
+    :temperature-mode-inactive "08000000000000000000"
+    :acs-mode-detumbling       "09000200000000000000"
+    :acs-mode-pointing         "09000100000000000000"
+    :acs-mode-off              "09000000000000000000"
+    :fault-mode-active         "F1FF0100000000000000"
+    :fault-mode-inactive       "F1FF0000000000000000"
+    :fault-check-mag-x-true    "F2FF0100000000000000"
+    :fault-check-mag-x-false   "F2FF0000000000000000"
+    :fault-check-mag-y-true    "F3FF0100000000000000"
+    :fault-check-mag-y-false   "F3FF0000000000000000"
+    :fault-check-mag-z-true    "F4FF0100000000000000"
+    :fault-check-mag-z-false   "F4FF0000000000000000"
+    :fault-check-gyro-x-true   "F5FF0100000000000000"
+    :fault-check-gyro-x-false  "F5FF0000000000000000"
+    :fault-check-gyro-y-true   "F6FF0100000000000000"
+    :fault-check-gyro-y-false  "F6FF0000000000000000"
+    :fault-check-gyro-z-true   "F7FF0100000000000000"
+    :fault-check-gyro-z-false  "F7FF0000000000000000"
+    :fault-check-temp-c-true   "F8FF0100000000000000"
+    :fault-check-temp-c-false  "F8FF0000000000000000"
+    :fault-check-solar-true    "F9FF0100000000000000"
+    :fault-check-solar-false   "F9FF0000000000000000"
+    :fault-check-voltage-true  "FAFF0100000000000000"
+    :fault-check-voltage-false "FAFF0000000000000000"))
 
 (defn send-uplink
   "Sends an uplink request to the satellite via the

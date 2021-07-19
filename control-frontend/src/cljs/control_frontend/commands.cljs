@@ -3,25 +3,6 @@
             [re-com.core :as ui])
   (:require-macros [control-frontend.command-macros :refer [defcommand defcategory]]))
 
-(comment
-  (defcommand change-sr
-    "Change SR"
-    "Changes the SR frequency to the desired frequency."
-    :change-sr
-    [{:title "New Frequency", :field-type :numeric, :backend-key :frequency}])
-
-  (defcommand request-report
-    "Report"
-    "Requests a report containing all sensor data and faults."
-    :report
-    [])
-
-  (defcommand request-imu-data
-    "IMU Data"
-    "Requests a report containing data from the IMU."
-    :imu
-    []))
-
 (defcommand mission-mode-low-power
   "Mode: Low Power"
   "Sends command [mission::mode_low_power]"
@@ -70,17 +51,29 @@
   :burnwire-fire-false
   [])
 
+(defcommand burnwire-burn-time
+  "Burn Time"
+  "Sends command [burnwire::burn_time] with the specified seconds"
+  :burnwire-burn-time
+  [{:title "Burn Time", :backend-key :burn-time}])
+
+(defcommand burnwire-arm-time
+  "Arm Time"
+  "Sends command [burnwire::arm_time] with the specified seconds"
+  :burnwire-arm-time
+  [{:title "Arm Time", :backend-key :arm-time}])
+
 (defcommand rockblock-downlink-period
   "Downlink Period"
-  "Sends command [rockblock::downlink_period] with specified seconds"
+  "Sends command [rockblock::downlink_period] with the specified seconds"
   :rockblock-downlink-period
-  [])
+  [{:title "Downlink Period", :backend-key :downlink-period}])
 
 (defcommand request-img-fragment
   "Request Image Fragment"
   "Requests the specified image fragment from the specified camera"
   :request-img-fragment
-  [])
+  [{:title1 "Image Fragment Number", :backend-key1 :img-fragment, :title2 "Camera Serial Number", :backend-key2 :camera-number}])
 
 (defcommand take-photo-true
   "Take Photo: True"
@@ -260,7 +253,7 @@
   faults
   ::faults
   "Faults"
-  [fault-mode-active fault-mode-inactive fault-check-mag-x-true fault-check-gyro-x-false
+  [fault-mode-active fault-mode-inactive fault-check-mag-x-true fault-check-mag-x-false
    fault-check-mag-y-true fault-check-mag-y-false fault-check-mag-z-true fault-check-mag-z-false
    fault-check-gyro-x-true fault-check-gyro-x-false fault-check-gyro-y-true fault-check-gyro-y-false
    fault-check-gyro-z-true fault-check-gyro-z-false fault-check-temp-c-true fault-check-temp-c-false
@@ -270,7 +263,7 @@
   burnwire
   ::burnwire
   "Burnwire"
-  [burnwire-arm-true burnwire-arm-false burnwire-fire-true burnwire-fire-false])
+  [burnwire-arm-true burnwire-arm-false burnwire-fire-true burnwire-fire-false burnwire-burn-time burnwire-arm-time])
 
 (defcategory
   rockblock

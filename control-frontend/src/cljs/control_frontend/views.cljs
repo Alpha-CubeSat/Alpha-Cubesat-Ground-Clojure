@@ -114,7 +114,7 @@
 
 ; <editor-fold desc="command viewer">
 
-(defn command-field [{:keys [title field-type backend-key]} responses]
+(defn command-field-1 [{:keys [title backend-key]} responses]
   (let [input (reagent/atom nil)
         status (reagent/atom :error)]
     (fn []
@@ -125,14 +125,52 @@
                   [ui/input-text
                    :width "100%"
                    :model input
-                   :placeholder (commands/get-validation-tooltip field-type)
+                  ;;  :placeholder (commands/get-validation-tooltip field-type)
                    :change-on-blur? false
                    :status-icon? true
                    :status @status
                    :status-tooltip "Field is mandatory"
-                   :validation-regex (commands/get-field-validation field-type)
+                  ;;  :validation-regex (commands/get-field-validation field-type)
                    :on-change (fn [value]
                                 (swap! responses assoc backend-key value)
+                                (reset! status (if (commands/check-field-nonempty value) :success :error))
+                                (reset! input value))]]])))
+
+(defn command-field-2 [{:keys [title1 backend-key1 title2 backend-key2]} responses]
+  (let [input (reagent/atom nil)
+        status (reagent/atom :error)]
+    (fn []
+      [ui/v-box
+       :children [[ui/label
+                   :label title1
+                   :style {:font-size "12px"}]
+                  [ui/input-text
+                   :width "100%"
+                   :model input
+                  ;;  :placeholder (commands/get-validation-tooltip field-type)
+                   :change-on-blur? false
+                   :status-icon? true
+                   :status @status
+                   :status-tooltip "Field is mandatory"
+                  ;;  :validation-regex (commands/get-field-validation field-type)
+                   :on-change (fn [value]
+                                (swap! responses assoc backend-key1 value)
+                                (reset! status (if (commands/check-field-nonempty value) :success :error))
+                                (reset! input value))]
+                  [ui/label
+                   :label title2
+                   :style {:font-size "12px"}]
+                  [ui/input-text
+                   :width "100%"
+                   :model input
+                  ;;  :placeholder (commands/get-validation-tooltip field-type)
+                   :change-on-blur? false
+                   :status-icon? true
+                   :status @status
+                   :status-tooltip "Field is mandatory"
+                  ;;  :validation-regex (commands/get-field-validation field-type)
+                   :on-change (fn [value]
+                                (swap! responses assoc backend-key2 value)
                                 (reset! status (if (commands/check-field-nonempty value) :success :error))
                                 (reset! input value))]]])))
 
@@ -145,7 +183,8 @@
               [ui/v-box
                :gap "5px"
                :children (for [field fields]
-                           [command-field field responses])]]])
+                           (if (< (count field) 3)
+                             [command-field-1 field responses] [command-field-2 field responses]))]]])
 
 (defn command-description [text]
   [ui/v-box
@@ -340,7 +379,6 @@
                :style {:font-weight "bold" :padding "5px" :min-width "350px" :background "#e8e8e8"}
                :label "Message"]]])
 
-
 (defn row [status name submitted message]
   [ui/h-box
    :width "100%"
@@ -359,7 +397,6 @@
                        :style {:padding "5px" :max-width "350px" :overflow "hidden"}
                        :label message]]]])
 
-
 (def uniqkey (atom 0))
 
 (defn gen-key []
@@ -371,7 +408,6 @@
    :children [[table-header]
               (for [{:keys [status name submitted message]} commands]
                 ^{:key (gen-key)} [row status name submitted message])]])
-
 
 (defn command-log []
   (let [comm-history (re-frame/subscribe [:command-history])]
@@ -410,7 +446,6 @@
                  :label "Select Image"]
                 (for [name image-names]
                   [img-card name])]]))
-
 
 (defn img-display []
   (let [image-data @(re-frame/subscribe [:cubesat-image])]

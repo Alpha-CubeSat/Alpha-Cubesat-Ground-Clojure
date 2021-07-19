@@ -219,6 +219,8 @@
          :mission-mode ::reader/uint8
          :fire-burnwire ::reader/uint8
          :arm-burnwire ::reader/uint8
+         :burnwire-burn-time ::reader/uint8
+         :burnwire-armed-timeout ::reader/uint8
          :burnwire-mode ::reader/uint8
          :burnwire-attempts ::reader/uint8
          :downlink-period ::reader/uint8

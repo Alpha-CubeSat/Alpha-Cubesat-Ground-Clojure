@@ -26,6 +26,7 @@ version of the ground software in C++ (https://github.com/AlphaCornell/AlphaGrou
 - NPM, javascript package manager: https://www.npmjs.com/get-npm
 - React: `npm install react` (may need to use `sudo npm install react`)
 - ReactDOM: `npm install react-dom` (may need to use `sudo npm install react-dom`)
+- Create-React-Class: `npm install create-react-class` (may need to use `sudo npm install create-react-class`)
 - All other dependencies (such as Clojure/script libraries) will be handled by Leiningen when building
 
 ## Setting up Alpha Ground Station for Development, Running in Development Mode

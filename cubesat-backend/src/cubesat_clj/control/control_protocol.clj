@@ -66,10 +66,10 @@
    argument operation
 
   Example:
-    (parse-single-arg {:type :report :example 50} :example)
-    returns the string '01,50!'"
+    (parse-single-arg {:type :burnwire-burn-time :example 3} :example)
+    returns the string '03000000000300000000' ('0300' + '00000003' + '00000000')"
   [operation key]
-  (str (-> operation :type uplink-opcodes) (-> operation :fields key hexify-arg) "0000000"))
+  (str (-> operation :type uplink-opcodes) (-> operation :fields key hexify-arg) "00000000"))
 
 (defn- parse-double-arg
   [operation key1 key2]

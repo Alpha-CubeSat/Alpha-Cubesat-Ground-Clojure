@@ -91,7 +91,7 @@
     :burnwire-burn-time        (parse-single-arg operation :burn-time)
     :burnwire-arm-time         (parse-single-arg operation :arm-time)
     :rockblock-downlink-period (parse-single-arg operation :downlink-period)
-    :request-img-fragment      (parse-double-arg operation ::img-fragment :camera-number)
+    :request-img-fragment      (parse-double-arg operation :img-fragment :camera-number)
     :take-photo-true           "07000100000000000000"
     :take-photo-false          "07000000000000000000"
     :temperature-mode-active   "08000100000000000000"

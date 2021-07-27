@@ -53,14 +53,28 @@
    :rockblock-downlink-period "0500"
    :request-img-fragment "0600"})
 
+(defn- flip-bytes
+  "Flips a hexadecimal sequence of 4 bytes so that it is ready to submitted as 
+   a command argument.
+   
+   Example:
+   
+   '00000154' (or 00 00 01 54) -> '54010000' (or 54 01 00 00)"
+  [hex-string]
+  (let [s1 (subs hex-string 0 2)
+        s2 (subs hex-string 2 4)
+        s3 (subs hex-string 4 6)
+        s4 (subs hex-string 6 8)]
+    (str s4 s3 s2 s1)))
+
 (defn- hexify-arg
   "Translates decimal number into a hexidecimal string, then pads the string 
    with '0's at the beginning until it is length 8."
   [num]
-  (let [s (string/upper-case (format "%x" num))]
+  (let [s (string/upper-case (format "%x" (Integer/parseInt num)))]
     (if (< (.length s) 8)
       (recur (str "0" s))
-      s)))
+      (flip-bytes s))))
 
 (defn- parse-single-arg
   "A helper function that returns the string representation for a single 
@@ -68,7 +82,7 @@
 
   Example:
     (parse-single-arg {:type :burnwire-burn-time :example 3} :example)
-    returns the string '03000000000300000000' ('0300' + '00000003' + '00000000')"
+    returns the string '03000300000000000000' ('0300' + '03000000' + '00000000')"
   [operation key]
   (str (-> operation :type uplink-opcodes) (-> operation :fields key hexify-arg) "00000000"))
 

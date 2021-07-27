@@ -4,7 +4,8 @@
   (:require [clj-http.client :as http]
             [cubesat-clj.util.binary.hex-string :as bin]
             [schema.core :as s]
-            [cuerdas.core :as str]))
+            [cuerdas.core :as str]
+            [clojure.string :as string]))
 
 
 ;; ---------------------- Ground API ------------------------------
@@ -55,8 +56,8 @@
 (defn- hexify-arg
   "Translates decimal number into a hexidecimal string, then pads the string 
    with '0's at the beginning until it is length 8."
-  [st]
-  (let [s (bin/hexify (str st))]
+  [num]
+  (let [s (string/upper-case (format "%x" num))]
     (if (< (.length s) 8)
       (recur (str "0" s))
       s)))
@@ -128,11 +129,10 @@
   :description and :code are only returned when there is an error, and :id is only returned on success
   The possible responses are documented at https://www.rock7.com/downloads/RockBLOCK-Web-Services-User-Guide.pdf"
   [imei user pass data]
-  (let [binary (bin/hexify data)
-        request {:imei     imei
+  (let [request {:imei     imei
                  :username user
                  :password pass
-                 :data     binary}
+                 :data     data}
         response (http/post rockblock-endpoint {:form-params request})
         [status code desc] (str/split (:body response) ",")
         response-map (conj {:status status}

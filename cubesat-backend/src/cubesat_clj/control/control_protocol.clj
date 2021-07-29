@@ -67,14 +67,18 @@
         s4 (subs hex-string 6 8)]
     (str s4 s3 s2 s1)))
 
+(defn- pad-hex-string
+  "Pads a hex string with with '0's at the beginning until it is length 8."
+  [s]
+  (if (< (.length s) 8)
+    (recur (str "0" s))
+    (flip-bytes s)))
+
 (defn- hexify-arg
-  "Translates decimal number into a hexidecimal string, then pads the string 
-   with '0's at the beginning until it is length 8."
-  [num]
-  (let [s (string/upper-case (format "%x" (Integer/parseInt num)))]
-    (if (< (.length s) 8)
-      (recur (str "0" s))
-      (flip-bytes s))))
+  "Translates decimal number into a hexidecimal string."
+  [s]
+  (let [hex (string/upper-case (format "%x" (Integer/parseInt s)))]
+    (pad-hex-string hex)))
 
 (defn- parse-single-arg
   "A helper function that returns the string representation for a single 

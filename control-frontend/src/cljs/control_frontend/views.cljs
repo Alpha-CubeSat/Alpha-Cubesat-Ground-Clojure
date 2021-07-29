@@ -137,8 +137,10 @@
                                 (reset! input value))]]])))
 
 (defn command-field-2 [{:keys [title1 backend-key1 title2 backend-key2]} responses]
-  (let [input (reagent/atom nil)
-        status (reagent/atom :error)]
+  (let [input1 (reagent/atom nil)
+        input2 (reagent/atom nil)
+        status1 (reagent/atom :error)
+        status2 (reagent/atom :error)]
     (fn []
       [ui/v-box
        :children [[ui/label
@@ -146,33 +148,33 @@
                    :style {:font-size "12px"}]
                   [ui/input-text
                    :width "100%"
-                   :model input
+                   :model input1
                   ;;  :placeholder (commands/get-validation-tooltip field-type)
                    :change-on-blur? false
                    :status-icon? true
-                   :status @status
+                   :status @status1
                    :status-tooltip "Field is mandatory"
                   ;;  :validation-regex (commands/get-field-validation field-type)
                    :on-change (fn [value]
                                 (swap! responses assoc backend-key1 value)
-                                (reset! status (if (commands/check-field-nonempty value) :success :error))
-                                (reset! input value))]
+                                (reset! status1 (if (commands/check-field-nonempty value) :success :error))
+                                (reset! input1 value))]
                   [ui/label
                    :label title2
                    :style {:font-size "12px"}]
                   [ui/input-text
                    :width "100%"
-                   :model input
+                   :model input2
                   ;;  :placeholder (commands/get-validation-tooltip field-type)
                    :change-on-blur? false
                    :status-icon? true
-                   :status @status
+                   :status @status2
                    :status-tooltip "Field is mandatory"
                   ;;  :validation-regex (commands/get-field-validation field-type)
                    :on-change (fn [value]
                                 (swap! responses assoc backend-key2 value)
-                                (reset! status (if (commands/check-field-nonempty value) :success :error))
-                                (reset! input value))]]])))
+                                (reset! status2 (if (commands/check-field-nonempty value) :success :error))
+                                (reset! input2 value))]]])))
 
 (defn command-args [fields responses]
   [ui/v-box

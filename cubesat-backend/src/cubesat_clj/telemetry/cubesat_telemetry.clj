@@ -8,6 +8,7 @@
             [clj-time.core :as time]
             [buddy.core.keys :as keys]
             [cheshire.core :as json]
+            [clojure.string :as str]
             [cubesat-clj.util.binary.byte-buffer :as buffer]
             [cubesat-clj.util.binary.binary-reader :as reader]
             [cubesat-clj.util.binary.hex-string :as hex]
@@ -45,10 +46,10 @@
   rockblock only supports so much protocol. Image 'fragments' are then assembled into full images
   when fully collected, and saved into the image database"
   [ttl-data]
-  (let [{:keys [image-serial-number image-fragment-number image-data]} ttl-data]
+  (let [{:keys [image-serial-number image-fragment-number image-data total]} ttl-data]
     (save-cubesat-data ttl-data)
     (img/save-fragment image-serial-number image-fragment-number image-data)
-    (img/try-save-image image-serial-number)))
+    (img/try-save-image image-serial-number total)))
 
 (defn- map-range
   "Recreation of Arduino map() function used in flight code in order to convert imu data to correct imu values.
@@ -133,6 +134,37 @@
         (reader/read-uint8)
         opcodes)))
 
+(defn- read-hex-fragment
+  "Reads the hexadecimal string of an image fragment to determine if the 
+   fragment is the last fragment, which is indicated by the end-marker 'FFD9'. 
+   Returns the max number of fragments for the image, the hex string data needed
+   to be read, and the number of bytes of the fragment contents data (not 
+   counting image serial number and fragment number).
+   
+   If the image fragment is not last, then the max number of fragments is set 
+   arbitrarilty to 100, and the entirety of the hex string must be read. If the 
+   image fragment is the last, then the max number of fragments is set to 
+   (last fragment number + 1), and the hexadecimal string is read up to 'FFD9.'
+   
+   Notes: - The fragment number is stored in the indices [10, 12) of the hex 
+            string.
+          - The first byte in the hex string is the op code, and has already 
+            been read,
+            so it is omitted.
+          - The entire hex string for an image fragment data is 70 bytes long 
+            (140 characters)."
+  [rockblock-data]
+  (if (str/includes? rockblock-data "FFD9")
+    (let [max-fragments (+ 1 (Integer/parseInt (subs rockblock-data 10 12) 16))
+          end-boundary (+ 4 (str/index-of rockblock-data "FFD9"))
+          hex-data (subs rockblock-data 2 end-boundary)
+          byte-length (/ (- (.length hex-data) 10) 2)]
+      {:max-fragments max-fragments, :hex-data hex-data, :byte-length byte-length})
+    (let [max-fragments 100
+          hex-data (subs rockblock-data 2 140)
+          byte-length 64]
+      {:max-fragments max-fragments, :hex-data hex-data, :byte-length byte-length})))
+
 (defmulti read-packet-data
   "Reads data from a packet based on opcode.
           Note: Image data is received in fragments, :data-length bytes each, which must be assembled into a full image
@@ -141,16 +173,18 @@
   (fn [[opcode packet]] opcode))
 
 (defmethod read-packet-data ::ttl
-  [[_ packet]]
-  (let [metadata (reader/read-structure
+  [[_ rockblock-data]]
+  (let [fragment-info (read-hex-fragment rockblock-data)
+        packet (rb/get-cubesat-message-binary (:hex-data fragment-info))
+        metadata (reader/read-structure
                   packet
-                  [:image-serial-number ::reader/uint16
-                   :image-fragment-number ::reader/uint32
-                   :data-length ::reader/uint8])
+                  [:image-serial-number ::reader/uint8
+                   :image-fragment-number ::reader/uint32])
         fragment (reader/read-structure
                   packet
-                  [:image-data ::reader/byte-array (:data-length metadata)])]
-    (merge metadata fragment)))
+                  [:image-data ::reader/byte-array (:byte-length fragment-info)])
+        total (:total (:max-fragments fragment-info))]
+    (merge metadata fragment total)))
 
 (defmethod read-packet-data ::imu
   [[_ packet]]
@@ -319,6 +353,8 @@
         result (if (= op ::empty-packet)
                  (error-data rockblock-report "empty packet")
                  (try
-                   (assoc (read-packet-data [op packet]) :telemetry-report-type op)
+                   (if (= op ::ttl)
+                     (assoc (read-packet-data [op (:data rockblock-report)]) :telemetry-report-type op)
+                     (assoc (read-packet-data [op packet]) :telemetry-report-type op))
                    (catch Exception e (error-data rockblock-report (.getMessage e)))))]
     (merge meta result)))

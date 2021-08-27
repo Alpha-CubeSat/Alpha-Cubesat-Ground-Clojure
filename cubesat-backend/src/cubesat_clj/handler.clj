@@ -22,7 +22,6 @@
            (java.nio.charset Charset)
            (java.util Date)))
 
-
 (defn- log-error
   "Since rockblock sends weird requests, and then doesn't tell you the responses it gets,
   we override compojure-api's error handling to log everything"
@@ -34,7 +33,6 @@
         (let [result {:message (.getMessage e), :type type :timestamp (Date.)}]
           (es/index! "log" es/daily-index-strategy result)
           (f (assoc result :message http-message))))))
-
 
 (defn- make-docs []
   "If configured to do so, returns a map containing swagger UI spec"
@@ -55,77 +53,73 @@
 
 (def app
   (api
-    {:exceptions {:handlers
-                  {::ex/request-parsing     (log-error response/bad-request :unknown "Invalid Request Format")
-                   ::ex/request-validation  (log-error response/bad-request :unknown "Request Did Not Match Schema")
-                   ::ex/response-validation (log-error response/internal-server-error :unknown "Response Validation Error")
-                   ::ex/default             (log-error response/internal-server-error :unknown "Unknown Error")}}
-     :swagger    (make-docs)}
+   {:exceptions {:handlers
+                 {::ex/request-parsing     (log-error response/bad-request :unknown "Invalid Request Format")
+                  ::ex/request-validation  (log-error response/bad-request :unknown "Request Did Not Match Schema")
+                  ::ex/response-validation (log-error response/internal-server-error :unknown "Response Validation Error")
+                  ::ex/default             (log-error response/internal-server-error :unknown "Unknown Error")}}
+    :swagger    (make-docs)}
 
-    (context "/api" []
+   (context "/api" []
 
+     (context "/debug" []
+       :tags ["Debug"]
 
-      (context "/debug" []
-        :tags ["Debug"]
+       (GET "/ping" []
+         :return s/Str
+         :summary "Test the API"
+         (do (println "Got a ping")
+             (ok "pong")))
 
-        (GET "/ping" []
-          :return s/Str
-          :summary "Test the API"
-          (do (println "Got a ping")
-              (ok "pong")))
+       (POST "/echo" []
+         :consumes ["text/plain"]
+         :body [body s/Str]
+         (do (println "Echo: " body)
+             (ok body))))
 
-        (POST "/echo" []
-          :consumes ["text/plain"]
-          :body [body s/Str]
-          (do (println "Echo: " body)
-              (ok body))))
+     (context "/auth" []
+       :tags ["Auth"]
 
+       (POST "/login" []
+         :return auth-data/AuthResult
+         :summary "Authenticate to get a token for api access"
+         :body [credentials auth-data/LoginRequest]
+         (auth/handle-login credentials)))
 
-      (context "/auth" []
-        :tags ["Auth"]
+     (context "/rockblock" []
+       :tags ["RockBlock"]
 
-        (POST "/login" []
-          :return auth-data/AuthResult
-          :summary "Authenticate to get a token for api access"
-          :body [credentials auth-data/LoginRequest]
-          (auth/handle-login credentials)))
+       (POST "/telemetry" []
+         :return nil
+         :summary "Receive data from rockblock web services"
+         :middleware [telemetry/verify-rockblock-data-mw
+                      telemetry/fix-rockblock-date-mw]
+         :body [report downlink/RockblockReport]
+         (telemetry/handle-report! report)))
 
+     (context "/cubesat" []
+       :tags ["Cubesat"]
 
-      (context "/rockblock" []
-        :tags ["RockBlock"]
+       (GET "/img/recent" []
+         :summary "Returns a list of names of recently received ttl files"
+         :return images/ImageNames
+         :middleware [auth/wrap-auth]
+         :header-params [authorization :- s/Str]
+         :query-params [count :- s/Int]
+         (images/handle-get-image-list count))
 
-        (POST "/telemetry" []
-          :return nil
-          :summary "Receive data from rockblock web services"
-          :middleware [telemetry/verify-rockblock-data-mw
-                       telemetry/fix-rockblock-date-mw]
-          :body [report downlink/RockblockReport]
-          (telemetry/handle-report! report)))
+       (GET "/img/:name" []
+         :summary "Returns the ttl file with the given name if it exists"
+         :return images/ImageData
+         :middleware [auth/wrap-auth]
+         :header-params [authorization :- s/Str]
+         :path-params [name :- s/Str]
+         (images/handle-image-request name))
 
-
-      (context "/cubesat" []
-        :tags ["Cubesat"]
-
-        (GET "/img/recent" []
-          :summary "Returns a list of names of recently received ttl files"
-          :return images/ImageNames
-          :middleware [auth/wrap-auth]
-          :header-params [authorization :- s/Str]
-          :query-params [count :- s/Int]
-          (images/handle-get-image-list count))
-
-        (GET "/img/:name" []
-          :summary "Returns the ttl file with the given name if it exists"
-          :return images/ImageData
-          :middleware [auth/wrap-auth]
-          :header-params [authorization :- s/Str]
-          :path-params [name :- s/Str]
-          (images/handle-image-request name))
-
-        (POST "/command" []
-          :return {:response uplink/CommandResponse}
-          :summary "Process a command to be sent to cubesat."
-          :middleware [auth/wrap-auth]
-          :header-params [authorization :- s/Str]
-          :body [command uplink/Command]
-          (control/handle-command! command))))))
+       (POST "/command" []
+         :return {:response uplink/CommandResponse}
+         :summary "Process a command to be sent to cubesat."
+         :middleware [auth/wrap-auth]
+         :header-params [authorization :- s/Str]
+         :body [command uplink/Command]
+         (control/handle-command! command))))))

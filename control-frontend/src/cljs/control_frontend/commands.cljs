@@ -3,6 +3,12 @@
             [re-com.core :as ui])
   (:require-macros [control-frontend.command-macros :refer [defcommand defcategory]]))
 
+(defcommand mission-mode-init
+  "Mode: Initialization"
+  "Sends command [mission::mode_initialization]"
+  :mission-mode-init
+  [])
+
 (defcommand mission-mode-low-power
   "Mode: Low Power"
   "Sends command [mission::mode_low_power]"
@@ -15,16 +21,16 @@
   :mission-mode-deployment
   [])
 
-(defcommand mission-mode-standby
-  "Mode: Standby"
-  "Sends command [mission::mode_standby]"
-  :mission-mode-standby
-  [])
-
 (defcommand mission-mode-safe
   "Mode: Safe"
   "Sends command [mission::mode_safe]"
   :mission-mode-safe
+  [])
+
+(defcommand mission-mode-standby
+  "Mode: Standby"
+  "Sends command [mission::mode_standby]"
+  :mission-mode-standby
   [])
 
 (defcommand burnwire-arm-true
@@ -99,22 +105,52 @@
   :temperature-mode-inactive
   [])
 
-(defcommand acs-mode-detumbling
-  "Mode: Detumbling"
-  "Sends command [acs::mode_detumbling]"
-  :acs-mode-detumbling
+(defcommand acs-mode-full
+  "Mode: Full"
+  "Sends command [acs::mode_full]"
+  :acs-mode-full
   [])
 
-(defcommand acs-mode-pointing
-  "Mode: Pointing"
-  "Sends command [acs::mode_pointing]"
-  :acs-mode-pointing
+(defcommand acs-mode-simple
+  "Mode: Simple"
+  "Sends command [acs::mode_simple]"
+  :acs-mode-simple
   [])
 
 (defcommand acs-mode-off
   "Mode: Off"
   "Sends command [acs::mode_off]"
   :acs-mode-off
+  [])
+
+(defcommand acs-mag-x
+  "Mag: X"
+  "Sends command [acs::mag_x]"
+  :acs-mag-x
+  [])
+
+(defcommand acs-mag-y
+  "Mag: Y"
+  "Sends command [acs::mag_y]"
+  :acs-mag-y
+  [])
+
+(defcommand acs-mag-z
+  "Mag: Z"
+  "Sends command [acs::mag_z]"
+  :acs-mag-z
+  [])
+
+(defcommand camera-turn-on
+  "Turn On"
+  "Sends command [camera::turn_on]"
+  :camera-turn-on
+  [])
+
+(defcommand camera-turn-off
+  "Turn Off"
+  "Sends command [camera::turn_off]"
+  :camera-turn-off
   [])
 
 (defcommand fault-mode-active
@@ -241,13 +277,13 @@
   acs
   ::acs
   "ACS"
-  [acs-mode-detumbling acs-mode-pointing acs-mode-off])
+  [acs-mode-full acs-mode-simple acs-mode-off acs-mag-x acs-mag-y acs-mag-z])
 
 (defcategory
   mission
   ::mission
   "Mission Control"
-  [mission-mode-low-power mission-mode-deployment mission-mode-safe mission-mode-standby])
+  [mission-mode-init mission-mode-low-power mission-mode-deployment mission-mode-standby mission-mode-safe])
 
 (defcategory
   faults
@@ -275,7 +311,7 @@
   camera
   ::camera
   "Camera"
-  [request-img-fragment take-photo-true take-photo-false])
+  [request-img-fragment take-photo-true take-photo-false camera-turn-on camera-turn-off])
 
 (defcategory
   temperature

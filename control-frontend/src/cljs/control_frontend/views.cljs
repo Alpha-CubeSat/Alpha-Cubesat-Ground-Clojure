@@ -466,12 +466,48 @@
                          [img-display]]]}])
 ;; </editor-fold>
 
+;; fragment information start (not used )
+
+(defn img-fragment-header []
+  [ui/h-box
+   :size "1 1 auto"
+   :max-height "30px"
+   :width "100%"
+   :style {:background "#e8e8e8"}
+   :children [[ui/label
+               :style {:font-weight "bold" :padding "5px" :width "90px" :background "#e8e8e8"}
+               :label "Image SN"]
+              [ui/label
+               :style {:font-weight "bold" :padding "5px" :width "150px" :background "#e8e8e8"}
+               :label "Lastest Fragment"]
+              [ui/label
+               :style {:font-weight "bold" :padding "5px" :width "150px" :background "#e8e8e8"}
+               :label "Fragment Count"]
+              [ui/label
+               :style {:font-weight "bold" :padding "5px" :min-width "200px" :background "#e8e8e8"}
+               :label "Missing Fragments"]]])
+
+(defn downlink-info []
+  [widget-card
+   {:title   "Downlinked Information"
+    :content [ui/v-box
+              :children [[img-fragment-header]]]}])
+
+;; fragment information end
+
 (defn center-container []
   [ui/v-box
    :size "1 1 auto"
    :max-width "900px"
    :children [[command-viewer]
               [image-viewer]]])
+
+(defn right-container []
+  [ui/v-box
+   :size "1 1 auto"
+   :max-width "900px"
+   :children [[command-log]
+              [downlink-info]]])
 
 (defn main-container []
   [ui/h-box

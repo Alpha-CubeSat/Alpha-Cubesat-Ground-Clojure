@@ -50,8 +50,7 @@
 (def rockblock-web-pk
   "Public key provided for JWT verification by rockblock web services documentation"
   (keys/str->public-key
-    "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAlaWAVJfNWC4XfnRx96p9cztBcdQV6l8aKmzAlZdpEcQR6MSPzlgvihaUHNJgKm8t5ShR3jcDXIOI7er30cIN4/9aVFMe0LWZClUGgCSLc3rrMD4FzgOJ4ibD8scVyER/sirRzf5/dswJedEiMte1ElMQy2M6IWBACry9u12kIqG0HrhaQOzc6Tr8pHUWTKft3xwGpxCkV+K1N+9HCKFccbwb8okRP6FFAMm5sBbw4yAu39IVvcSL43Tucaa79FzOmfGs5mMvQfvO1ua7cOLKfAwkhxEjirC0/RYX7Wio5yL6jmykAHJqFG2HT0uyjjrQWMtoGgwv9cIcI7xbsDX6owIDAQAB\n-----END PUBLIC KEY-----"))
-
+   "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAlaWAVJfNWC4XfnRx96p9cztBcdQV6l8aKmzAlZdpEcQR6MSPzlgvihaUHNJgKm8t5ShR3jcDXIOI7er30cIN4/9aVFMe0LWZClUGgCSLc3rrMD4FzgOJ4ibD8scVyER/sirRzf5/dswJedEiMte1ElMQy2M6IWBACry9u12kIqG0HrhaQOzc6Tr8pHUWTKft3xwGpxCkV+K1N+9HCKFccbwb8okRP6FFAMm5sBbw4yAu39IVvcSL43Tucaa79FzOmfGs5mMvQfvO1ua7cOLKfAwkhxEjirC0/RYX7Wio5yL6jmykAHJqFG2HT0uyjjrQWMtoGgwv9cIcI7xbsDX6owIDAQAB\n-----END PUBLIC KEY-----"))
 
 (defn verify-rockblock-request
   "Uses jwt to verify data sent by rockblock web services. Returns a copy of the data if valid,
@@ -66,14 +65,12 @@
       (do (str "Caught exception unsigning rockblock data: " (.printStackTrace e))
           nil))))
 
-
 (defn get-cubesat-message-binary
   "Gets the string encoded binary data sent by the cubesat as a java nio ByteBuffer"
   [rockblock-report]
   (-> (:data rockblock-report)
       (hex/hex-str-to-bytes)
       (buffer/from-byte-array)))
-
 
 (defn save-rockblock-report
   "Saves a rockblock report to elasticsearch. Gets latitude and longitude
@@ -85,7 +82,6 @@
         result (assoc data :location location)
         index (cfg/rockblock-db-index (cfg/get-config))]
     (es/index! index es/daily-index-strategy result)))
-
 
 (defn fix-rb-datetime
   "Convert Rockblock's nonstandard date format to YYYY-MM-DDThh:mm:ssZ.

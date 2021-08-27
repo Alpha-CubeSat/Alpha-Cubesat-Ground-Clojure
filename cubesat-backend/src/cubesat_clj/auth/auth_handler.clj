@@ -5,7 +5,6 @@
             [ring.util.http-response :as http]
             [cubesat-clj.auth.auth-protocol :as auth]))
 
-
 (defn handle-login
   "Handles a login request by checking the provided credentials. Returns a signed JWT token if successful." ; TODO fail if user could not be found
   [credentials]
@@ -18,6 +17,8 @@
 
 
 ; TODO use the more idiomatic "wrap-restricted" feature in buddy once needed
+
+
 (defn- wrap-check-auth
   "Middleware which checks if a request was successfully authenticated, and if not, returns an unauthorized error code
   instead of processing the request"
@@ -26,7 +27,6 @@
     (if (buddy/authenticated? request)
       (handler request)
       (http/unauthorized))))
-
 
 (defn wrap-auth
   "Convenience function that wraps a request in middleware for authenticating, authorizing, and

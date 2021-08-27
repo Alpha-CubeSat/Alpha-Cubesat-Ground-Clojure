@@ -13,4 +13,5 @@
   :profiles {:dev {:dependencies [[javax.servlet/javax.servlet-api "3.1.0"]]
                    :plugins      [[lein-ring "0.12.5"]
                                   [lein-codox "0.10.7"]]}
-             :uberjar {:aot :all}})
+             :uberjar {:aot :all}}
+  :main cubesat-clj.test2)

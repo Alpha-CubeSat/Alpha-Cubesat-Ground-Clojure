@@ -1,14 +1,28 @@
+;; {:docs {:enabled? true}
+;;  :auth      {:jws-secret "example_secret"
+;;              :users-file "users-example.edn"}               ; Password for the example user is "example"
+;;  :telemetry {:elasticsearch-indices {:rockblock "rockblock-data"
+;;                                      :cubesat   "cubesat-data"}}
+;;  :database  {:elasticsearch {:host        "http://localhost"
+;;                              :port        9200
+;;                              :conn-config {:content-type :json
+;;                                            :basic-auth   ["example-user" "example-password"]}}
+;;              :image         {:root "cubesat_images"}}
+
+;;  :control   {:elasticsearch-indices {:command-log "commands"}
+;;              :rockblock {:imei       "example-imei"
+;;                          :basic-auth ["example-user" "example-password"]}}}
+
 {:docs {:enabled? true}
  :auth      {:jws-secret "example_secret"
              :users-file "users-example.edn"}               ; Password for the example user is "example"
  :telemetry {:elasticsearch-indices {:rockblock "rockblock-data"
-                                     :cubesat   "cubesat-data"}}
+                                     :cubesat   "cubesat-normal-report"}}
  :database  {:elasticsearch {:host        "http://localhost"
                              :port        9200
                              :conn-config {:content-type :json
-                                           :basic-auth   ["example-user" "example-password"]}}
+                                           :basic-auth   ["elastic" "starshot10"]}}
              :image         {:root "cubesat_images"}}
-
  :control   {:elasticsearch-indices {:command-log "commands"}
-             :rockblock {:imei       "example-imei"
-                         :basic-auth ["example-user" "example-password"]}}}
+             :rockblock {:imei       "300534061384690"
+                         :basic-auth ["cornell.cubesat@gmail.com" "starshot10"]}}}

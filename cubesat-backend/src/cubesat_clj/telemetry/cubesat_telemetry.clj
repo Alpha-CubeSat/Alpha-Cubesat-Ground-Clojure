@@ -46,10 +46,10 @@
   rockblock only supports so much protocol. Image 'fragments' are then assembled into full images
   when fully collected, and saved into the image database"
   [ttl-data]
-  (let [{:keys [image-serial-number image-fragment-number image-data total]} ttl-data]
-    (save-cubesat-data ttl-data)
-    (img/save-fragment image-serial-number image-fragment-number image-data)
-    (img/try-save-image image-serial-number total)))
+  (let [{:keys [serial-number fragment-number fragment-data max-fragments]} ttl-data]
+    ;; (save-cubesat-data ttl-data)
+    (img/save-fragment serial-number fragment-number fragment-data)
+    (img/try-save-image serial-number max-fragments)))
 
 (defn- map-range
   "Recreation of Arduino map() function used in flight code in order to convert imu data to correct imu values.
@@ -134,36 +134,72 @@
         (reader/read-uint8)
         opcodes)))
 
+;; (defn- read-hex-fragment
+;;   "Reads the hexadecimal string of an image fragment to determine if the 
+;;    fragment is the last fragment, which is indicated by the end-marker 'FFD9'. 
+;;    Returns the max number of fragments for the image, the hex string data needed
+;;    to be read, and the number of bytes of the fragment contents data (not 
+;;    counting image serial number and fragment number).
+
+;;    If the image fragment is not last, then the max number of fragments is set 
+;;    arbitrarilty to 100, and the entirety of the hex string must be read. If the 
+;;    image fragment is the last, then the max number of fragments is set to 
+;;    (last fragment number + 1), and the hexadecimal string is read up to 'FFD9.'
+
+;;    Notes: - The fragment number is stored in the indices [10, 12) of the hex 
+;;             string.
+;;           - The first byte in the hex string is the op code, and has already 
+;;             been read,
+;;             so it is omitted.
+;;           - The entire hex string for an image fragment data is 70 bytes long 
+;;             (140 characters)."
+;;   [rockblock-data]
+;;   (if (str/includes? rockblock-data "ffd9")
+;;     (let [max-fragments (+ 1 (Integer/parseInt (subs rockblock-data 10 12) 16))
+;;           end-boundary (+ 4 (str/index-of rockblock-data "ffd9"))
+;;           hex-data (subs rockblock-data 2 end-boundary)
+;;           byte-length (/ (- (.length hex-data) 10) 2)]
+;;       {:max-fragments max-fragments, :hex-data hex-data, :byte-length byte-length})
+;;     (let [max-fragments 100
+;;           hex-data (subs rockblock-data 2 140)
+;;           byte-length 64]
+;;       {:max-fragments max-fragments, :hex-data hex-data, :byte-length byte-length})))
+
 (defn- read-hex-fragment
   "Reads the hexadecimal string of an image fragment to determine if the 
-   fragment is the last fragment, which is indicated by the end-marker 'FFD9'. 
-   Returns the max number of fragments for the image, the hex string data needed
-   to be read, and the number of bytes of the fragment contents data (not 
-   counting image serial number and fragment number).
+   fragment is the last fragment, which is indicated by the end-marker 'ffd9'. 
+   Returns the serial number in decimal form, the fragment number in 
+   decimal form, the max number of fragments in decimal form, and the hex string 
+   of fragment data needed to be read (minus the opcode, image serial number and 
+   fragment number).
    
    If the image fragment is not last, then the max number of fragments is set 
-   arbitrarilty to 100, and the entirety of the hex string must be read. If the 
-   image fragment is the last, then the max number of fragments is set to 
-   (last fragment number + 1), and the hexadecimal string is read up to 'FFD9.'
+   arbitrarilty to 100, and the entirety of the fragment portion in hex string 
+   must be read. If the image fragment is the last, then the max number of 
+   fragments is set to (last fragment number + 1), and the hexadecimal string is 
+   read up to 'ffd9'.
    
-   Notes: - The fragment number is stored in the indices [10, 12) of the hex 
+   Notes: - The serial number is stored in the indices of [2, 4) of the hex 
             string.
-          - The first byte in the hex string is the op code, and has already 
-            been read,
-            so it is omitted.
+          - The fragment number is stored in the indices [10, 12) of the hex 
+            string. Fragment count starts at 0.
+          - The fragment data starts at index 12 and goes to the end of of the
+            hex-string or to the end of end-marker 'ffd9'.
           - The entire hex string for an image fragment data is 70 bytes long 
             (140 characters)."
   [rockblock-data]
-  (if (str/includes? rockblock-data "FFD9")
-    (let [max-fragments (+ 1 (Integer/parseInt (subs rockblock-data 10 12) 16))
-          end-boundary (+ 4 (str/index-of rockblock-data "FFD9"))
-          hex-data (subs rockblock-data 2 end-boundary)
-          byte-length (/ (- (.length hex-data) 10) 2)]
-      {:max-fragments max-fragments, :hex-data hex-data, :byte-length byte-length})
-    (let [max-fragments 100
-          hex-data (subs rockblock-data 2 140)
-          byte-length 64]
-      {:max-fragments max-fragments, :hex-data hex-data, :byte-length byte-length})))
+  (if (str/includes? rockblock-data "ffd9") ;change to "FFD9" for test2.clj
+    (let [serial-number (Integer/parseInt (subs rockblock-data 2 4) 16)
+          fragment-number (Integer/parseInt (subs rockblock-data 10 12) 16)
+          max-fragments (+ 1 (Integer/parseInt (subs rockblock-data 10 12) 16))
+          end-boundary (+ 4 (str/index-of rockblock-data "ffd9")) ;change to "FFD9" for test2.clj
+          fragment-data (hex/hex-str-to-bytes (subs rockblock-data 12 end-boundary))]
+      {:serial-number serial-number, :fragment-number fragment-number, :max-fragments max-fragments, :fragment-data fragment-data})
+    (let [serial-number (Integer/parseInt (subs rockblock-data 2 4) 16)
+          fragment-number (Integer/parseInt (subs rockblock-data 10 12) 16)
+          max-fragments 100
+          fragment-data (hex/hex-str-to-bytes (subs rockblock-data 12 140))]
+      {:serial-number serial-number, :fragment-number fragment-number, :max-fragments max-fragments, :fragment-data fragment-data})))
 
 (defmulti read-packet-data
   "Reads data from a packet based on opcode.
@@ -172,19 +208,23 @@
           is which part of the image being sent"
   (fn [[opcode packet]] opcode))
 
+;; (defmethod read-packet-data ::ttl
+;;   [[_ rockblock-data]]
+;;   (let [fragment-info (read-hex-fragment rockblock-data)
+;;         packet (rb/get-cubesat-message-binary (:hex-data fragment-info))
+;;         metadata (reader/read-structure
+;;                   packet
+;;                   [:image-serial-number ::reader/uint8
+;;                    :image-fragment-number ::reader/uint32])
+;;         fragment (reader/read-structure
+;;                   packet
+;;                   [:image-data ::reader/byte-array (:byte-length fragment-info)])
+;;         total (:total (:max-fragments fragment-info))]
+;;     (merge metadata fragment total)))
+
 (defmethod read-packet-data ::ttl
   [[_ rockblock-data]]
-  (let [fragment-info (read-hex-fragment rockblock-data)
-        packet (rb/get-cubesat-message-binary (:hex-data fragment-info))
-        metadata (reader/read-structure
-                  packet
-                  [:image-serial-number ::reader/uint8
-                   :image-fragment-number ::reader/uint32])
-        fragment (reader/read-structure
-                  packet
-                  [:image-data ::reader/byte-array (:byte-length fragment-info)])
-        total (:total (:max-fragments fragment-info))]
-    (merge metadata fragment total)))
+  (read-hex-fragment rockblock-data))
 
 (defmethod read-packet-data ::imu
   [[_ packet]]
@@ -233,46 +273,119 @@
 ;;       compute-battery-value))
 
 
+(def nr (atom {:is-photoresistor-covered 0
+               :is-door-button-pressed 0
+               :mission-mode 0
+               :fire-burnwire 0
+               :arm-burnwire 0
+               :burnwire-burn-time 0
+               :burnwire-armed-timeout-limit 0
+               :burnwire-mode 0
+               :burnwire-attempts 0
+               :downlink-period 0
+               :waiting-messages 0
+               :is-command-waiting 0
+               :x-mag 0
+               :y-mag 0
+               :z-mag 0
+               :x-gyro 0
+               :y-gyro 0
+               :z-gyro 0
+               :temp 0
+               :temp-mode 0
+               :solar-current 0
+               :in-sun 0
+               :acs-mode 0
+               :battery-voltage 0
+               :fault-mode 0
+               :check-x-mag 0
+               :check-y-mag 0
+               :check-z-mag 0
+               :check-x-gyro 0
+               :check-y-gyro 0
+               :check-z-gyro 0
+               :check-temp 0
+               :check-solar-current 0
+               :check-battery 0
+               :take-photo 0
+               :camera-on 0}))
+
 (defmethod read-packet-data ::normal-report
-  [[_ packet]]
-  (-> packet
-      (reader/read-structure
-       [:photoresistor-covered ::reader/uint8
-        :door-button-pressed ::reader/uint8
-        :mission-mode ::reader/uint8
-        :fire-burnwire ::reader/uint8
-        :arm-burnwire ::reader/uint8
-        :burnwire-burn-time ::reader/uint8
-        :burnwire-armed-timeout ::reader/uint8
-        :burnwire-mode ::reader/uint8
-        :burnwire-attempts ::reader/uint8
-        :downlink-period ::reader/uint8
-        :waiting-messages ::reader/uint8
-        :command-to-process ::reader/uint8
-        :x-mag ::reader/uint8
-        :y-mag ::reader/uint8
-        :z-mag ::reader/uint8
-        :x-gyro ::reader/uint8
-        :y-gyro ::reader/uint8
-        :z-gyro ::reader/uint8
-        :temp ::reader/uint8
-        :temp-mode ::reader/uint8
-        :solar-current ::reader/uint8
-        :in-sun ::reader/uint8
-        :acs-mode ::reader/uint8
-        :battery ::reader/uint8
-        :fault-mode ::reader/uint8
-        :check-mag-x ::reader/uint8
-        :check-mag-y ::reader/uint8
-        :check-mag-z ::reader/uint8
-        :check-gyro-x ::reader/uint8
-        :check-gyro-y ::reader/uint8
-        :check-gyro-z ::reader/uint8
-        :check-temp ::reader/uint8
-        :check-solar ::reader/uint8
-        :check-battery ::reader/uint8
-        :take-photo ::reader/uint8
-        :camera-on ::reader/uint8])))
+  [[_ packet rockblock-data]]
+  ;; (-> packet
+  ;;     (reader/read-structure
+  ;;      [:is-photoresistor-covered ::reader/uint8
+  ;;       :is-door-button-pressed ::reader/uint8
+  ;;       :mission-mode ::reader/uint8
+  ;;       :fire-burnwire ::reader/uint8
+  ;;       :arm-burnwire ::reader/uint8
+  ;;       :burnwire-burn-time ::reader/uint8
+  ;;       :burnwire-armed-timeout-limit ::reader/uint8
+  ;;       :burnwire-mode ::reader/uint8
+  ;;       :burnwire-attempts ::reader/uint8
+  ;;       :downlink-period ::reader/uint8
+  ;;       :waiting-messages ::reader/uint8
+  ;;       :is-command-waiting ::reader/uint8
+  ;;       :x-mag ::reader/uint8
+  ;;       :y-mag ::reader/uint8
+  ;;       :z-mag ::reader/uint8
+  ;;       :x-gyro ::reader/uint8
+  ;;       :y-gyro ::reader/uint8
+  ;;       :z-gyro ::reader/uint8
+  ;;       :temp ::reader/uint8
+  ;;       :temp-mode ::reader/uint8
+  ;;       :solar-current ::reader/uint8
+  ;;       :in-sun ::reader/uint8
+  ;;       :acs-mode ::reader/uint8
+  ;;       :battery-voltage ::reader/uint8
+  ;;       :fault-mode ::reader/uint8
+  ;;       :check-x-mag ::reader/uint8
+  ;;       :check-y-mag ::reader/uint8
+  ;;       :check-z-mag ::reader/uint8
+  ;;       :check-x-gyro ::reader/uint8
+  ;;       :check-y-gyro ::reader/uint8
+  ;;       :check-z-gyro ::reader/uint8
+  ;;       :check-temp ::reader/uint8
+  ;;       :check-solar-current ::reader/uint8
+  ;;       :check-battery ::reader/uint8
+  ;;       :take-photo ::reader/uint8
+  ;;       :camera-on ::reader/uint8]))
+  (println "Is the photoresistor covered? " (Integer/parseInt (subs rockblock-data 2 4) 16))
+  (println "Is the door button pressed? " (Integer/parseInt (subs rockblock-data 4 6) 16))
+  (println "Mission Mode: " (Integer/parseInt (subs rockblock-data 6 8) 16))
+  (println "Fire Burnwire? " (Integer/parseInt (subs rockblock-data 8 10) 16))
+  (println "Arm Burnwire? " (Integer/parseInt (subs rockblock-data 10 12) 16))
+  (println "Burnwire Burn Time: " (Integer/parseInt (subs rockblock-data 12 14) 16))
+  (println "Burnwire Burn Timeout Limit: " (Integer/parseInt (subs rockblock-data 14 16) 16))
+  (println "Burnwire Mode: " (Integer/parseInt (subs rockblock-data 16 18) 16))
+  (println "Number of Burnwire Attempts: " (Integer/parseInt (subs rockblock-data 18 20) 16))
+  (println "Rockblock Downlink Period: " (Integer/parseInt (subs rockblock-data 20 22) 16))
+  (println "Number of Rockblock Messages: " (Integer/parseInt (subs rockblock-data 22 24) 16))
+  (println "Is there a command waiting? " (Integer/parseInt (subs rockblock-data 24 26) 16))
+  (println "Mag X Value: " (Integer/parseInt (subs rockblock-data 26 28) 16))
+  (println "Mag Y Value: " (Integer/parseInt (subs rockblock-data 28 30) 16))
+  (println "Mag Z Value: " (Integer/parseInt (subs rockblock-data 30 32) 16))
+  (println "Gyro X Value: " (Integer/parseInt (subs rockblock-data 32 34) 16))
+  (println "Gyro Y Value: " (Integer/parseInt (subs rockblock-data 34 36) 16))
+  (println "Gyro Z Value: " (Integer/parseInt (subs rockblock-data 36 38) 16))
+  (println "Temperature in C: " (Integer/parseInt (subs rockblock-data 38 40) 16))
+  (println "Temperature Control Mode: " (Integer/parseInt (subs rockblock-data 40 42) 16))
+  (println "Solar Current: " (Integer/parseInt (subs rockblock-data 42 44) 16))
+  (println "Is the Cubesat in the Sun? " (Integer/parseInt (subs rockblock-data 44 46) 16))
+  (println "ACS Mode: " (Integer/parseInt (subs rockblock-data 46 48) 16))
+  (println "Battery Voltage: " (Integer/parseInt (subs rockblock-data 48 50) 16))
+  (println "Fault Mode: " (Integer/parseInt (subs rockblock-data 50 52) 16))
+  (println "Check Mag X value? " (Integer/parseInt (subs rockblock-data 52 54) 16))
+  (println "Check Mag Y value? " (Integer/parseInt (subs rockblock-data 54 56) 16))
+  (println "Check Mag Z value? " (Integer/parseInt (subs rockblock-data 56 58) 16))
+  (println "Check Gyro X value? " (Integer/parseInt (subs rockblock-data 58 60) 16))
+  (println "Check Gyro Y value? " (Integer/parseInt (subs rockblock-data 60 62) 16))
+  (println "Check Gyro Z value?" (Integer/parseInt (subs rockblock-data 62 64) 16))
+  (println "Check temperature value? " (Integer/parseInt (subs rockblock-data 64 66) 16))
+  (println "Check solar current value? " (Integer/parseInt (subs rockblock-data 66 68) 16))
+  (println "Check battery voltage? " (Integer/parseInt (subs rockblock-data 68 70) 16))
+  (println "Should the camera take a photo?" (Integer/parseInt (subs rockblock-data 70 72) 16))
+  (println "Is the camera powered? " (Integer/parseInt (subs rockblock-data 72 74) 16)))
 
 (defmethod read-packet-data ::special-report
   [[_ packet]]
@@ -355,6 +468,6 @@
                  (try
                    (if (= op ::ttl)
                      (assoc (read-packet-data [op (:data rockblock-report)]) :telemetry-report-type op)
-                     (assoc (read-packet-data [op packet]) :telemetry-report-type op))
+                     (assoc (read-packet-data [op packet (:data rockblock-report)]) :telemetry-report-type op))
                    (catch Exception e (error-data rockblock-report (.getMessage e)))))]
     (merge meta result)))

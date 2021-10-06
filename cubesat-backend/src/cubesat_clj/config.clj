@@ -15,7 +15,8 @@
    :auth      {:jws-secret s/Str
                :users-file s/Str}
    :telemetry {:elasticsearch-indices {:rockblock s/Str
-                                       :cubesat   s/Str}}
+                                       :cubesat   s/Str
+                                       :image     s/Str}}
    :database  {:elasticsearch {:host        s/Str
                                :port        s/Int
                                :conn-config {(s/optional-key :basic-auth)   [s/Str] ; ["user" "pass"]
@@ -45,12 +46,10 @@
     @config
     (do (load-config!) @config)))
 
-
 (defn docs-enabled?
   "Returns whether API documentation generation/hosting is enabled."
   [config]
   (get-in config [:docs :enabled?]))
-
 
 (defn docs-base-path
   "Returns configured base path for documentation location. If not set, returns the default route of \"/\"."
@@ -59,23 +58,25 @@
     path
     "/"))
 
-
 (defn rockblock-db-index
   "Returns the configured ElasticSearch index base name for RockBlock data."
   [config]
   (get-in config [:telemetry :elasticsearch-indices :rockblock]))
-
 
 (defn cubesat-db-index
   "Returns the configured ElasticSearch index base name for Cubesat data."
   [config]
   (get-in config [:telemetry :elasticsearch-indices :cubesat]))
 
+(defn image-db-index
+  "Returns the configured ElasticSearch index base name for image fragments."
+  [config]
+  (get-in config [:telemetry :elasticsearch-indices :image]))
+
 (defn control-db-index
   "Returns the configured ElasticSearch index base name for control logs"
   [config]
   (get-in config [:control :elasticsearch-indices :command-log]))
-
 
 (defn elasticsearch-endpoint
   "Returns ElasticSearch connection information."
@@ -84,36 +85,30 @@
         {:keys [host port] :as endpoint} es-conf]
     endpoint))
 
-
 (defn elasticsearch-config
   "Returns the ElasticSearch connection configuration."
   [config]
   (get-in config [:database :elasticsearch :conn-config]))
-
 
 (defn image-root-dir
   "Returns root directory path for local image store."
   [config]
   (get-in config [:database :image :root]))
 
-
 (defn rockblock-imei
   "Returns the imei of the RockBlock."
   [config]
   (get-in config [:control :rockblock :imei]))
-
 
 (defn rockblock-credentials
   "Returns credentials for RockBlock account."
   [config]
   (get-in config [:control :rockblock :basic-auth]))
 
-
 (defn jws-secret
   "Returns secret for jws tokens."
   [config]
   (get-in config [:auth :jws-secret]))
-
 
 (defn users-file
   "Returns name of file containing users."

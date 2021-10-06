@@ -7,7 +7,8 @@
 
 (def img-display-info (atom {:image-serial 0
                              :latest-fragment 0
-                             :missing-fragments ""}))
+                             :missing-fragments "None"
+                             :fragment-count "?/?"}))
 
 (def fragment-list (atom {:list []}))
 
@@ -19,13 +20,15 @@
 
 (defn- generate-missing-fragments [frag-list]
   (let [max-frag (apply max frag-list)]
+    (swap! img-display-info assoc :missing-fragments "")
     (loop [x 0]
       (when (< x max-frag)
         (if (some #(= x %) frag-list)
           ()
           (let [missing-frags (:missing-fragments @img-display-info)]
             (swap! img-display-info assoc :missing-fragments (str missing-frags x " "))))
-        (recur (inc x))))))
+        (recur (inc x))))
+    (if (= (count (:missing-fragments @img-display-info)) 0) (swap! img-display-info assoc :missing-fragments "None") ())))
 
 (defn save-fragment
   "saves an image fragment. Creates one if it doesn't exist using the following policy:
@@ -74,16 +77,12 @@
         fragment-dir (str db-root-dir "/" image-sn)
         fragment-files (rest (->> fragment-dir clojure.java.io/file file-seq))
         num-fragments (count fragment-files)
-        string-total (if (= 100 total-fragment-number) "?" (str total-fragment-number))
+        string-total (if (= 100 total-fragment-number) (str num-fragments "/?") (str num-fragments "/" total-fragment-number))
         img-dir (str db-root-dir "/img")
         img-file-path (str img-dir "/" image-sn ".jpeg")]
     (generate-fragment-list fragment-files)
     (generate-missing-fragments (:list @fragment-list))
-    (println "Image SN:" (:image-serial @img-display-info))
-    (println "Latest Fragment:" (:latest-fragment @img-display-info))
-    (println "Fragment Count:" num-fragments "/" string-total)
-    (println "Missing Fragments:" (:missing-fragments @img-display-info))
-    (println "==========================================================")
+    (swap! img-display-info assoc :fragment-count string-total)
     (.mkdirs (File. img-dir))                               ; make img dir if it doesnt exist
     (when (= num-fragments total-fragment-number)
       (let [sorted-fragments (sort-numeric-files fragment-files ".csfrag")
@@ -91,6 +90,11 @@
         (dorun (for [^File fragment sorted-fragments]
                  (.transferTo (FileInputStream. fragment) image-file)))
         (doto image-file (.flush) (.close))))))
+
+(defn get-img-display-info
+  "Returns the contents of the atom img-display-info"
+  []
+  @img-display-info)
 
 (defn get-images
   "Returns a seq of images, sorted by id (so that they're chronological -

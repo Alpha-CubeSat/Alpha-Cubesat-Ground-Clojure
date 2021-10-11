@@ -123,15 +123,42 @@
   [[_ packet]]
   (-> packet
       (reader/read-structure
-       [:altitude ::reader/uint8
-        :longitude ::reader/uint8
-        :latitude ::reader/uint8
-        :photoresistor-covered ::reader/uint8
+       [:is-photoresistor-covered ::reader/uint8
+        :is-door-button-pressed ::reader/uint8
         :mission-mode ::reader/uint8
+        :fire-burnwire ::reader/uint8
+        :arm-burnwire ::reader/uint8
+        :burnwire-burn-time ::reader/uint8
+        :burnwire-armed-timeout-limit ::reader/uint8
         :burnwire-mode ::reader/uint8
         :burnwire-attempts ::reader/uint8
-        :downlink-period ::reader/uint8])
-      compute-normal-report-values))
+        :downlink-period ::reader/uint8
+        :waiting-messages ::reader/uint8
+        :is-command-waiting ::reader/uint8
+        :x-mag ::reader/uint8
+        :y-mag ::reader/uint8
+        :z-mag ::reader/uint8
+        :x-gyro ::reader/uint8
+        :y-gyro ::reader/uint8
+        :z-gyro ::reader/uint8
+        :temp ::reader/uint8
+        :temp-mode ::reader/uint8
+        :solar-current ::reader/uint8
+        :in-sun ::reader/uint8
+        :acs-mode ::reader/uint8
+        :battery-voltage ::reader/uint8
+        :fault-mode ::reader/uint8
+        :check-x-mag ::reader/uint8
+        :check-y-mag ::reader/uint8
+        :check-z-mag ::reader/uint8
+        :check-x-gyro ::reader/uint8
+        :check-y-gyro ::reader/uint8
+        :check-z-gyro ::reader/uint8
+        :check-temp ::reader/uint8
+        :check-solar-current ::reader/uint8
+        :check-battery ::reader/uint8
+        :take-photo ::reader/uint8
+        :camera-on ::reader/uint8])))
 
 (defn- report-metadata
   "Returns rockblock metadata such as transmit time from a rockblock report as a map"
